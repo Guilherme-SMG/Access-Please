@@ -1,6 +1,5 @@
 import pygame
 import sys
-# Aqui estamos importando a classe que acabamos de criar!
 from src.ui import Desktop
 
 pygame.init()
@@ -11,8 +10,6 @@ TELA = pygame.display.set_mode((LARGURA, ALTURA))
 pygame.display.set_caption("Access, Please - Terminal SOC")
 
 relogio = pygame.time.Clock()
-
-# Instanciamos o nosso Desktop passando o tamanho da tela
 desktop_os = Desktop(LARGURA, ALTURA)
 
 
@@ -20,11 +17,18 @@ def main():
     rodando = True
 
     while rodando:
+        # 1. Verifica Eventos (Ouvidos do Jogo)
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 rodando = False
 
-        # 3. Desenha os elementos na tela (Apagamos o fill() escuro e colocamos isso)
+            # NOVO: Escutando o clique do mouse
+            if evento.type == pygame.MOUSEBUTTONDOWN:
+                if evento.button == 1:  # 1 é o botão esquerdo do mouse
+                    # Posição exata (X, Y) do clique para o Desktop analisar
+                    desktop_os.tratar_clique(evento.pos)
+
+        # 2. Desenha os elementos na tela
         desktop_os.desenhar(TELA)
 
         pygame.display.flip()
