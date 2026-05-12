@@ -22,15 +22,14 @@ class Desktop:
         self.logo_original = pygame.image.load(caminho_logo).convert_alpha()
         self.mini_logo = pygame.transform.scale(self.logo_original, (24, 24))
 
-        # --- CARREGAMENTO INTELIGENTE DE ÍCONES (Mantendo Proporção) ---
-        self.TAMANHO_MAX_ICONE = 52  # Tamanho máximo que um lado do ícone pode ter
+        # --- CARREGAMENTO INTELIGENTE DE ÍCONES ---
+        self.TAMANHO_MAX_ICONE = 52
 
         def carregar_e_escalar_proporcional(nome_arquivo):
             caminho = os.path.join("assets", "images", nome_arquivo)
             try:
                 img = pygame.image.load(caminho).convert_alpha()
                 w, h = img.get_size()
-                # Descobre qual é o maior lado e calcula o fator de escala
                 maior_lado = max(w, h)
                 fator = self.TAMANHO_MAX_ICONE / maior_lado
                 novo_w = int(w * fator)
@@ -39,10 +38,9 @@ class Desktop:
             except FileNotFoundError:
                 print(f"ERRO: {nome_arquivo} não encontrado.")
                 placeholder = pygame.Surface((self.TAMANHO_MAX_ICONE, self.TAMANHO_MAX_ICONE))
-                placeholder.fill((255, 0, 255))  # Rosa choque para avisar do erro
+                placeholder.fill((255, 0, 255))
                 return placeholder
 
-        # Carregando as imagens
         self.img_carreira = carregar_e_escalar_proporcional("icone_carreira.png")
         self.img_regras = carregar_e_escalar_proporcional("icone_regras.png")
         self.img_email = carregar_e_escalar_proporcional("icone_email.png")
@@ -51,10 +49,13 @@ class Desktop:
         self.img_halfdead = carregar_e_escalar_proporcional("icone_halfdead.png")
 
         # --- VARIÁVEIS DE ESTADO E COLISÃO ---
-        # Dicionário para guardar as Hitboxes de cada ícone e do botão Iniciar
         self.hitboxes = {}
-        # Estado do Menu Iniciar (Começa fechado)
         self.menu_aberto = False
+
+        # Estado das Janelas
+        self.janela_aberta = None
+        self.hitbox_fechar_janela = None
+        self.hitbox_fundo_janela = None
 
     def desenhar(self, tela):
         # 1. Papel de Parede
@@ -72,12 +73,9 @@ class Desktop:
         largura_botao = 90
         altura_botao = 30
 
-        # Salvando a Hitbox do botão Doors
         self.hitboxes["Botao Doors"] = pygame.Rect(x_botoes, y_botoes, largura_botao, altura_botao)
-
         pygame.draw.rect(tela, COR_BARRA_TAREFAS, self.hitboxes["Botao Doors"])
 
-        # Efeito de botão "apertado" se o menu estiver aberto, ou normal se estiver fechado
         if self.menu_aberto:
             pygame.draw.line(tela, COR_BOTAO, (x_botoes, y_botoes), (x_botoes + largura_botao, y_botoes), 2)
             pygame.draw.line(tela, COR_BOTAO, (x_botoes, y_botoes), (x_botoes, y_botoes + altura_botao), 2)
@@ -97,7 +95,7 @@ class Desktop:
         texto_doors = pygame.font.SysFont("tahoma", 16, bold=True).render("Doors", True, COR_TEXTO)
         tela.blit(texto_doors, (x_botoes + 35, y_botoes + 6))
 
-        # --- RELÓGIO DA BARRA DE TAREFAS (SYSTEM TRAY) ---
+        # --- RELÓGIO DA BARRA DE TAREFAS ---
         agora = datetime.now()
         texto_relogio = agora.strftime("%H:%M   %d/%m/%Y")
         superficie_relogio = self.fonte_padrao.render(texto_relogio, True, COR_TEXTO)
@@ -115,18 +113,14 @@ class Desktop:
         pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_tray + largura_tray, y_tray),
                          (x_tray + largura_tray, y_tray + altura_tray), 2)
 
-        pos_relogio_x = x_tray + 10
-        pos_relogio_y = y_tray + 4
-        tela.blit(superficie_relogio, (pos_relogio_x, pos_relogio_y))
+        tela.blit(superficie_relogio, (x_tray + 10, y_tray + 4))
 
-        # --- ÍCONES ALINHADOS PELO CENTRO ---
+        # --- ÍCONES DA ÁREA DE TRABALHO ---
         centro_coluna_1 = 60
         centro_coluna_2 = 180
-
         start_y = 30
         espacamento_y = 110
 
-        # Guardando as Hitboxes retornadas no dicionário
         self.hitboxes["Minha Carreira"] = self.desenhar_icone_centralizado(tela, centro_coluna_1, start_y,
                                                                            "Minha Carreira", self.img_carreira)
         self.hitboxes["OutVision"] = self.desenhar_icone_centralizado(tela, centro_coluna_1, start_y + espacamento_y,
@@ -143,62 +137,80 @@ class Desktop:
                                                                         start_y + (espacamento_y * 2), "Half Dead 3",
                                                                         self.img_halfdead)
 
-        # --- DESENHA O MENU INICIAR (POR CIMA DE TUDO) ---
+        # --- DESENHA A JANELA (SE HOUVER ALGUMA ABERTA) ---
+        if self.janela_aberta:
+            self.desenhar_janela(tela)
+
+        # --- DESENHA O MENU INICIAR ---
         if self.menu_aberto:
             self.desenhar_menu_iniciar(tela)
 
     def desenhar_icone_centralizado(self, tela, centro_x, y, nome, imagem):
         largura_img = imagem.get_width()
         altura_img = imagem.get_height()
-
         pos_img_x = centro_x - (largura_img // 2)
         tela.blit(imagem, (pos_img_x, y))
 
         texto_sombra = self.fonte_padrao.render(nome, True, (0, 0, 0))
         texto = self.fonte_padrao.render(nome, True, COR_TEXTO_ICONE)
-        largura_texto = texto.get_width()
 
-        pos_texto_x = centro_x - (largura_texto // 2)
+        pos_texto_x = centro_x - (texto.get_width() // 2)
         pos_texto_y = y + self.TAMANHO_MAX_ICONE + 5
 
         tela.blit(texto_sombra, (pos_texto_x + 1, pos_texto_y + 1))
         tela.blit(texto, (pos_texto_x, pos_texto_y))
 
-        # Cria e retorna um Retângulo invisível que cobre a imagem
         return pygame.Rect(pos_img_x, y, largura_img, altura_img)
 
-    def tratar_clique(self, pos_mouse):
-        clicou_em_algo = False
+    def desenhar_janela(self, tela):
+        largura_janela = 600
+        altura_janela = 450
+        x_janela = (self.largura / 2) - (largura_janela / 2)
+        y_janela = (self.altura / 2) - (altura_janela / 2)
 
-        for nome_icone, hitbox in self.hitboxes.items():
-            if hitbox.collidepoint(pos_mouse):
-                clicou_em_algo = True
+        # Salva a Hitbox da janela inteira (para não clicarmos nos ícones atrás dela)
+        self.hitbox_fundo_janela = pygame.Rect(x_janela, y_janela, largura_janela, altura_janela)
 
-                # Se clicou no Botão Doors, inverte o menu (Abre/Fecha)
-                if nome_icone == "Botao Doors":
-                    self.menu_aberto = not self.menu_aberto
-                    print("Menu Doors: ", "ABERTO" if self.menu_aberto else "FECHADO")
-                else:
-                    # Se clicou em outro ícone, fecha o menu e avisa o que abriu
-                    self.menu_aberto = False
-                    print(f"CLIQUE DETECTADO: Você abriu {nome_icone}")
+        # Fundo e Bordas
+        pygame.draw.rect(tela, COR_BARRA_TAREFAS, self.hitbox_fundo_janela)
+        pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_janela, y_janela), (x_janela + largura_janela, y_janela), 2)
+        pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_janela, y_janela), (x_janela, y_janela + altura_janela), 2)
+        pygame.draw.line(tela, COR_TEXTO, (x_janela + largura_janela, y_janela),
+                         (x_janela + largura_janela, y_janela + altura_janela), 2)
+        pygame.draw.line(tela, COR_TEXTO, (x_janela, y_janela + altura_janela),
+                         (x_janela + largura_janela, y_janela + altura_janela), 2)
 
-                return nome_icone
+        # Barra de Título
+        altura_titulo = 25
+        pygame.draw.rect(tela, (0, 0, 128), (x_janela + 3, y_janela + 3, largura_janela - 6, altura_titulo))
 
-        # Se clicou no vazio (fundo da tela), apenas fecha o menu
-        if not clicou_em_algo:
-            self.menu_aberto = False
+        # Texto do Título
+        fonte_titulo = pygame.font.SysFont("tahoma", 14, bold=True)
+        texto_titulo = fonte_titulo.render(self.janela_aberta, True, COR_BOTAO_BRIGHT)
+        tela.blit(texto_titulo, (x_janela + 8, y_janela + 7))
 
-        return None
+        # Botão [X]
+        tamanho_x = 21
+        x_fechar = x_janela + largura_janela - tamanho_x - 5
+        y_fechar = y_janela + 5
+        self.hitbox_fechar_janela = pygame.Rect(x_fechar, y_fechar, tamanho_x, tamanho_x)
+
+        pygame.draw.rect(tela, COR_BARRA_TAREFAS, self.hitbox_fechar_janela)
+        pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_fechar, y_fechar), (x_fechar + tamanho_x, y_fechar), 1)
+        pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_fechar, y_fechar), (x_fechar, y_fechar + tamanho_x), 1)
+        pygame.draw.line(tela, COR_TEXTO, (x_fechar + tamanho_x, y_fechar),
+                         (x_fechar + tamanho_x, y_fechar + tamanho_x), 1)
+        pygame.draw.line(tela, COR_TEXTO, (x_fechar, y_fechar + tamanho_x),
+                         (x_fechar + tamanho_x, y_fechar + tamanho_x), 1)
+
+        tela.blit(fonte_titulo.render("X", True, COR_TEXTO), (x_fechar + 6, y_fechar + 2))
 
     def desenhar_menu_iniciar(self, tela):
         largura_menu = 220
         altura_menu = 320
         x_menu = 0
-        # O Y é calculado para ficar exatamente em cima da barra de tarefas
         y_menu = self.altura - 40 - altura_menu
 
-        # 1. Fundo e Borda 3D do Menu
         pygame.draw.rect(tela, COR_BARRA_TAREFAS, (x_menu, y_menu, largura_menu, altura_menu))
         pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_menu, y_menu), (x_menu + largura_menu, y_menu), 2)
         pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_menu, y_menu), (x_menu, y_menu + altura_menu), 2)
@@ -207,33 +219,52 @@ class Desktop:
         pygame.draw.line(tela, COR_TEXTO, (x_menu + largura_menu + 1, y_menu),
                          (x_menu + largura_menu + 1, y_menu + altura_menu), 1)
 
-        # 2. A Faixa Lateral Azul Clássica
-        largura_faixa = 35
-        cor_faixa = (0, 0, 128)  # Azul marinho
-        pygame.draw.rect(tela, cor_faixa, (x_menu + 2, y_menu + 2, largura_faixa, altura_menu - 4))
+        pygame.draw.rect(tela, (0, 0, 128), (x_menu + 2, y_menu + 2, 35, altura_menu - 4))
 
-        # 3. O Texto "Doors OS" rotacionado 90 graus
-        fonte_faixa = pygame.font.SysFont("tahoma", 20, bold=True)
-        texto_faixa = fonte_faixa.render("Doors OS", True, COR_BOTAO_BRIGHT)
-        texto_rotacionado = pygame.transform.rotate(texto_faixa, 90)  # Gira o texto para cima
-        # Posiciona o texto colado no canto inferior da faixa azul
+        texto_rotacionado = pygame.transform.rotate(
+            pygame.font.SysFont("tahoma", 20, bold=True).render("Doors OS", True, COR_BOTAO_BRIGHT), 90)
         tela.blit(texto_rotacionado, (x_menu + 7, y_menu + altura_menu - texto_rotacionado.get_height() - 10))
 
-        # 4. Itens do Menu (Apenas visuais por enquanto)
         itens = ["Programas", "Documentos", "Configurações", "Pesquisar", "Ajuda", "Desligar..."]
         y_item = y_menu + 20
-        x_item = x_menu + 50
-
         for item in itens:
-            texto_item = self.fonte_padrao.render(item, True, COR_TEXTO)
-            tela.blit(texto_item, (x_item, y_item))
-
-            # Desenha uma linha separadora antes do botão "Desligar"
+            tela.blit(self.fonte_padrao.render(item, True, COR_TEXTO), (x_menu + 50, y_item))
             if item == "Ajuda":
                 y_linha = y_item + 30
-                pygame.draw.line(tela, COR_BOTAO, (x_item, y_linha), (x_menu + largura_menu - 10, y_linha), 1)
-                pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_item, y_linha + 1),
+                pygame.draw.line(tela, COR_BOTAO, (x_menu + 50, y_linha), (x_menu + largura_menu - 10, y_linha), 1)
+                pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_menu + 50, y_linha + 1),
                                  (x_menu + largura_menu - 10, y_linha + 1), 1)
-                y_item += 10  # Pula um espacinho extra
-
+                y_item += 10
             y_item += 40
+
+    def tratar_clique(self, pos_mouse):
+        # 1. Verifica as janelas PRIMEIRO
+        if self.janela_aberta:
+            if self.hitbox_fechar_janela and self.hitbox_fechar_janela.collidepoint(pos_mouse):
+                print(f"Fechando janela: {self.janela_aberta}")
+                self.janela_aberta = None
+                return "Fechou Janela"
+            elif self.hitbox_fundo_janela and self.hitbox_fundo_janela.collidepoint(pos_mouse):
+                # Se clicou dentro da janela, o clique "morre" aqui e não ativa os ícones
+                return "Clique na janela"
+
+        # 2. Se a janela não bloqueou, verifica os ícones e a barra de tarefas
+        clicou_em_algo = False
+
+        for nome_icone, hitbox in self.hitboxes.items():
+            if hitbox.collidepoint(pos_mouse):
+                clicou_em_algo = True
+
+                if nome_icone == "Botao Doors":
+                    self.menu_aberto = not self.menu_aberto
+                else:
+                    self.menu_aberto = False
+                    print(f"Abrindo aplicativo: {nome_icone}")
+                    self.janela_aberta = nome_icone
+
+                return nome_icone
+
+        if not clicou_em_algo:
+            self.menu_aberto = False
+
+        return None
