@@ -1,6 +1,7 @@
 import pygame
 import sys
-from src.ui import Desktop, MenuPrincipal
+# Adicionamos a TelaBoot no import
+from src.ui import Desktop, MenuPrincipal, TelaBoot
 
 pygame.init()
 
@@ -13,6 +14,7 @@ relogio = pygame.time.Clock()
 
 desktop_os = Desktop(LARGURA, ALTURA)
 menu_principal = MenuPrincipal(LARGURA, ALTURA)
+tela_boot = TelaBoot(LARGURA, ALTURA)
 
 
 def main():
@@ -29,16 +31,23 @@ def main():
                     if estado_jogo == "MENU":
                         acao = menu_principal.tratar_clique(evento.pos)
                         if acao == "INICIAR TURNO":
-                            estado_jogo = "DESKTOP"
-                            print("SISTEMA INICIADO.")
-                        elif acao == "SAIR":
-                            rodando = False
+                            # Quando clica em iniciar, vai para a tela de transição
+                            estado_jogo = "BOOT"
+                            tela_boot.resetar()  # Garante que a animação comece do zero
 
                     elif estado_jogo == "DESKTOP":
                         desktop_os.tratar_clique(evento.pos)
 
+        # DESENHO DA MÁQUINA DE ESTADOS
         if estado_jogo == "MENU":
             menu_principal.desenhar(TELA)
+
+        elif estado_jogo == "BOOT":
+            # A função desenhar da TelaBoot retorna True quando acaba
+            animacao_terminou = tela_boot.desenhar(TELA)
+            if animacao_terminou:
+                estado_jogo = "DESKTOP"
+
         elif estado_jogo == "DESKTOP":
             desktop_os.desenhar(TELA)
 
