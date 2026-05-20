@@ -4,8 +4,8 @@ from src.ui import Desktop, MenuPrincipal, TelaBoot
 
 pygame.init()
 
-LARGURA = 1024
-ALTURA = 768
+LARGURA = 1920
+ALTURA = 1080
 TELA = pygame.display.set_mode((LARGURA, ALTURA))
 pygame.display.set_caption("Access, Please - Terminal SOC")
 
