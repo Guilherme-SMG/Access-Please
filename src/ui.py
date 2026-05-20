@@ -53,7 +53,6 @@ class Desktop:
         self.hitbox_fechar_janela = None
         self.hitbox_fundo_janela = None
 
-        # --- NOVAS HITBOXES PARA OS BOTÕES DE E-MAIL ---
         self.hitbox_btn_anterior = None
         self.hitbox_btn_proximo = None
 
@@ -91,9 +90,9 @@ class Desktop:
             },
             {
                 "avatar": self.avatar_carlinhos,
-                "remetente": "Carlinhos (Mestre dos Cavalos e Analista Sênior)",
-                "assunto": "PROTOCOLOS DE SEGURANÇA AVANÇADOS: Como usar o HDMI?",
-                "corpo": ""
+                "remetente": "Carlinhos (Mestre de Cerimônias e Analista Sênior)",
+                "assunto": "PROTOCOLOS DE SEGURANÇA AVANÇADOS: GATOS NO TECLADO",
+                "corpo": "SOC, atenção para o protocolo G.A.T.O.S.\nSempre que um felino for detectado sobre um teclado, o analista deve:\n1. Oferecer ração ao gato.\n2. Tirar foto para o Instagram.\n3. Bloquear todas as portas USB por 30 minutos.\nEssas medidas são cruciais para a segurança do estado. Grato."
             },
             {
                 "avatar": self.avatar_gabe,
@@ -214,6 +213,39 @@ class Desktop:
 
         return pygame.Rect(pos_img_x, y, largura_img, self.TAMANHO_MAX_ICONE + 20)
 
+    # --- A FUNÇÃO QUE FALTAVA VOLTOU AQUI ---
+    def desenhar_menu_iniciar(self, tela):
+        largura_menu = 220
+        altura_menu = 320
+        x_menu = 0
+        y_menu = self.altura - 40 - altura_menu
+
+        pygame.draw.rect(tela, COR_BARRA_TAREFAS, (x_menu, y_menu, largura_menu, altura_menu))
+        pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_menu, y_menu), (x_menu + largura_menu, y_menu), 2)
+        pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_menu, y_menu), (x_menu, y_menu + altura_menu), 2)
+        pygame.draw.line(tela, COR_BOTAO, (x_menu + largura_menu, y_menu),
+                         (x_menu + largura_menu, y_menu + altura_menu), 2)
+        pygame.draw.line(tela, COR_TEXTO, (x_menu + largura_menu + 1, y_menu),
+                         (x_menu + largura_menu + 1, y_menu + altura_menu), 1)
+
+        pygame.draw.rect(tela, (0, 0, 128), (x_menu + 2, y_menu + 2, 35, altura_menu - 4))
+
+        texto_rotacionado = pygame.transform.rotate(
+            pygame.font.SysFont("tahoma", 20, bold=True).render("Doors OS", True, COR_BOTAO_BRIGHT), 90)
+        tela.blit(texto_rotacionado, (x_menu + 7, y_menu + altura_menu - texto_rotacionado.get_height() - 10))
+
+        itens = ["Programas", "Documentos", "Configurações", "Pesquisar", "Ajuda", "Desligar..."]
+        y_item = y_menu + 20
+        for item in itens:
+            tela.blit(self.fonte_padrao.render(item, True, COR_TEXTO), (x_menu + 50, y_item))
+            if item == "Ajuda":
+                y_linha = y_item + 30
+                pygame.draw.line(tela, COR_BOTAO, (x_menu + 50, y_linha), (x_menu + largura_menu - 10, y_linha), 1)
+                pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_menu + 50, y_linha + 1),
+                                 (x_menu + largura_menu - 10, y_linha + 1), 1)
+                y_item += 10
+            y_item += 40
+
     def desenhar_janela(self, tela):
         largura_janela = 600
         altura_janela = 450
@@ -252,7 +284,6 @@ class Desktop:
 
         tela.blit(fonte_titulo.render("X", True, COR_TEXTO), (x_fechar + 6, y_fechar + 2))
 
-        # Injetando conteúdo se for o aplicativo de e-mail
         if self.janela_aberta == "OutVision":
             self.desenhar_conteudo_email(tela, x_janela, y_janela, largura_janela, altura_janela, altura_titulo)
 
@@ -262,14 +293,11 @@ class Desktop:
                 self.janela_aberta = None
                 return "Fechou Janela"
 
-            # --- NOVO: CHECANDO CLIQUE NOS BOTÕES ANTERIOR E PRÓXIMO ---
             if self.janela_aberta == "OutVision":
                 if self.hitbox_btn_anterior and self.hitbox_btn_anterior.collidepoint(pos_mouse):
-                    # Volta um e-mail. Se for menor que 0, vai para o último (loop)
                     self.email_idx_atual = (self.email_idx_atual - 1) % len(self.emails_humoristicos)
                     return "E-mail Anterior"
                 elif self.hitbox_btn_proximo and self.hitbox_btn_proximo.collidepoint(pos_mouse):
-                    # Avança um e-mail. Se passar do último, volta pro primeiro
                     self.email_idx_atual = (self.email_idx_atual + 1) % len(self.emails_humoristicos)
                     return "Próximo E-mail"
 
@@ -287,7 +315,6 @@ class Desktop:
                     self.menu_aberto = False
                     self.janela_aberta = nome_icone
 
-                    # Toda vez que abre o OutVision fresco, reseta pro e-mail 0 (Everson Zoio)
                     if nome_icone == "OutVision":
                         self.email_idx_atual = 0
 
@@ -327,11 +354,9 @@ class Desktop:
         pygame.draw.line(tela, COR_BOTAO, (x_conteudo, y_corpo - 10), (x_j + w_j - 10, y_corpo - 10), 1)
         self.desenhar_texto_com_quebra(tela, email["corpo"], self.fonte_padrao, x_conteudo, y_corpo, largura_max_corpo)
 
-        # --- NOVO: DESENHANDO OS BOTÕES DE NAVEGAÇÃO ---
         largura_btn = 90
         altura_btn = 26
 
-        # Posicionando no canto inferior direito da janela
         x_btn_prox = x_j + w_j - largura_btn - 15
         y_btn = y_j + h_j - altura_btn - 15
         x_btn_ant = x_btn_prox - largura_btn - 10
@@ -339,7 +364,6 @@ class Desktop:
         self.hitbox_btn_anterior = pygame.Rect(x_btn_ant, y_btn, largura_btn, altura_btn)
         self.hitbox_btn_proximo = pygame.Rect(x_btn_prox, y_btn, largura_btn, altura_btn)
 
-        # Função interna rápida para desenhar botão estilo Windows 95
         def desenhar_botao_os(retangulo, texto):
             pygame.draw.rect(tela, COR_BARRA_TAREFAS, retangulo)
             pygame.draw.line(tela, COR_BOTAO_BRIGHT, (retangulo.x, retangulo.y), (retangulo.right, retangulo.y), 2)
@@ -352,11 +376,9 @@ class Desktop:
             pos_y = retangulo.y + (altura_btn // 2) - (sup_texto.get_height() // 2)
             tela.blit(sup_texto, (pos_x, pos_y))
 
-        # Desenhando os botões na tela e informando qual e-mail estamos vendo
         desenhar_botao_os(self.hitbox_btn_anterior, "< Anterior")
         desenhar_botao_os(self.hitbox_btn_proximo, "Próximo >")
 
-        # Mostra o contador de e-mails (ex: 1/6)
         texto_contador = f"{self.email_idx_atual + 1}/{len(self.emails_humoristicos)}"
         sup_contador = self.fonte_padrao.render(texto_contador, True, COR_BOTAO)
         tela.blit(sup_contador, (x_btn_ant - 40, y_btn + 5))
