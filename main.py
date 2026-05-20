@@ -1,6 +1,6 @@
 import pygame
 import sys
-from src.ui import Desktop
+from src.ui import Desktop, MenuPrincipal
 
 pygame.init()
 
@@ -10,26 +10,37 @@ TELA = pygame.display.set_mode((LARGURA, ALTURA))
 pygame.display.set_caption("Access, Please - Terminal SOC")
 
 relogio = pygame.time.Clock()
+
 desktop_os = Desktop(LARGURA, ALTURA)
+menu_principal = MenuPrincipal(LARGURA, ALTURA)
 
 
 def main():
     rodando = True
+    estado_jogo = "MENU"
 
     while rodando:
-        # 1. Verifica Eventos (Ouvidos do Jogo)
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 rodando = False
 
-            # NOVO: Escutando o clique do mouse
             if evento.type == pygame.MOUSEBUTTONDOWN:
-                if evento.button == 1:  # 1 é o botão esquerdo do mouse
-                    # Posição exata (X, Y) do clique para o Desktop analisar
-                    desktop_os.tratar_clique(evento.pos)
+                if evento.button == 1:
+                    if estado_jogo == "MENU":
+                        acao = menu_principal.tratar_clique(evento.pos)
+                        if acao == "INICIAR TURNO":
+                            estado_jogo = "DESKTOP"
+                            print("SISTEMA INICIADO.")
+                        elif acao == "SAIR":
+                            rodando = False
 
-        # 2. Desenha os elementos na tela
-        desktop_os.desenhar(TELA)
+                    elif estado_jogo == "DESKTOP":
+                        desktop_os.tratar_clique(evento.pos)
+
+        if estado_jogo == "MENU":
+            menu_principal.desenhar(TELA)
+        elif estado_jogo == "DESKTOP":
+            desktop_os.desenhar(TELA)
 
         pygame.display.flip()
         relogio.tick(60)

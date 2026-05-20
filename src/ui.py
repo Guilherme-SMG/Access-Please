@@ -168,7 +168,6 @@ class Desktop:
         x_janela = (self.largura / 2) - (largura_janela / 2)
         y_janela = (self.altura / 2) - (altura_janela / 2)
 
-        # Salva a Hitbox da janela inteira (para não clicarmos nos ícones atrás dela)
         self.hitbox_fundo_janela = pygame.Rect(x_janela, y_janela, largura_janela, altura_janela)
 
         # Fundo e Bordas
@@ -238,19 +237,15 @@ class Desktop:
             y_item += 40
 
     def tratar_clique(self, pos_mouse):
-        # 1. Verifica as janelas PRIMEIRO
         if self.janela_aberta:
             if self.hitbox_fechar_janela and self.hitbox_fechar_janela.collidepoint(pos_mouse):
                 print(f"Fechando janela: {self.janela_aberta}")
                 self.janela_aberta = None
                 return "Fechou Janela"
             elif self.hitbox_fundo_janela and self.hitbox_fundo_janela.collidepoint(pos_mouse):
-                # Se clicou dentro da janela, o clique "morre" aqui e não ativa os ícones
                 return "Clique na janela"
 
-        # 2. Se a janela não bloqueou, verifica os ícones e a barra de tarefas
         clicou_em_algo = False
-
         for nome_icone, hitbox in self.hitboxes.items():
             if hitbox.collidepoint(pos_mouse):
                 clicou_em_algo = True
@@ -267,4 +262,50 @@ class Desktop:
         if not clicou_em_algo:
             self.menu_aberto = False
 
+        return None
+
+
+class MenuPrincipal:
+    def __init__(self, largura, altura):
+        self.largura = largura
+        self.altura = altura
+
+        # Fontes mais pesadas e burocráticas
+        self.fonte_titulo = pygame.font.SysFont("impact", 90)
+        self.fonte_botoes = pygame.font.SysFont("impact", 40)
+        self.hitboxes = {}
+
+    def desenhar(self, tela):
+        # Fundo quase totalmente preto (clima pesado)
+        tela.fill((15, 15, 18))
+
+        # --- TÍTULO ---
+        texto_sombra = self.fonte_titulo.render("ACCESS, PLEASE", True, (40, 0, 0))
+        texto_titulo = self.fonte_titulo.render("ACCESS, PLEASE", True, (200, 40, 40))
+
+        pos_x_titulo = (self.largura // 2) - (texto_titulo.get_width() // 2)
+        tela.blit(texto_sombra, (pos_x_titulo + 5, 105))
+        tela.blit(texto_titulo, (pos_x_titulo, 100))
+
+        # --- BOTÕES ---
+        textos_botoes = ["INICIAR TURNO", "SAIR"]
+        y_atual = 400
+        self.hitboxes.clear()
+
+        for texto in textos_botoes:
+            superficie_texto = self.fonte_botoes.render(texto, True, (220, 220, 220))
+            retangulo_texto = superficie_texto.get_rect(center=(self.largura // 2, y_atual))
+            retangulo_botao = retangulo_texto.inflate(60, 20)
+
+            pygame.draw.rect(tela, (40, 40, 40), retangulo_botao)
+            pygame.draw.rect(tela, (100, 100, 100), retangulo_botao, 3)
+            tela.blit(superficie_texto, retangulo_texto)
+
+            self.hitboxes[texto] = retangulo_botao
+            y_atual += 100
+
+    def tratar_clique(self, pos_mouse):
+        for acao, hitbox in self.hitboxes.items():
+            if hitbox.collidepoint(pos_mouse):
+                return acao
         return None
