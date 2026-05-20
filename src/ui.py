@@ -34,7 +34,6 @@ class Desktop:
                 novo_h = int(h * fator)
                 return pygame.transform.scale(img, (novo_w, novo_h))
             except FileNotFoundError:
-                print(f"ERRO: {nome_arquivo} não encontrado.")
                 placeholder = pygame.Surface((self.TAMANHO_MAX_ICONE, self.TAMANHO_MAX_ICONE))
                 placeholder.fill((255, 0, 255))
                 return placeholder
@@ -49,9 +48,18 @@ class Desktop:
         self.hitboxes = {}
         self.menu_aberto = False
 
+        # --- VARIÁVEIS DA JANELA ---
         self.janela_aberta = None
         self.hitbox_fechar_janela = None
         self.hitbox_fundo_janela = None
+        self.hitbox_barra_titulo = None
+
+        # --- NOVO: LÓGICA DE ARRASTO ---
+        self.janela_x = 0
+        self.janela_y = 0
+        self.arrastando_janela = False
+        self.offset_x = 0
+        self.offset_y = 0
 
         self.hitbox_btn_anterior = None
         self.hitbox_btn_proximo = None
@@ -76,44 +84,24 @@ class Desktop:
         self.avatar_ney = carregar_avatar("ney.jpg")
 
         self.emails_humoristicos = [
-            {
-                "avatar": self.avatar_zoio,
-                "remetente": "Everson Zoio (SOC_STAGIARIO_01)",
-                "assunto": "DESAFIO HARDCORE: INSTALAR DOORS 95 NO MICROONDAS",
-                "corpo": "E ae, rapaziada! Zoio na area! O desafio é pesado: vou conectar meu microondas no Wi-Fi e tentar emular o Doors 95 nele. O bagulho é doido! Se o SOC detectar picos de temperatura anormal, é só o Gates mandando um update do além. Fica de boa! Falou!"
-            },
-            {
-                "avatar": self.avatar_abner,
-                "remetente": "Abner Trovão (Doutor da TI)",
-                "assunto": "VAZAMENTO DE DADOS IMPORTANTE (OU NÃO?)",
-                "corpo": "Bom dia, SOC. Detectei um vazamento de dados críticos no servidor.\nO arquivo se chama: \n'lista_compras_semanal.txt'\nEle contém informações confidenciais sobre o preço do pão e do leite. Peço providências imediatas antes que os h@ckers comprem tudo no mercado e eu fique sem lanche. Atenciosamente."
-            },
-            {
-                "avatar": self.avatar_carlinhos,
-                "remetente": "Carlinhos (Mestre de Cerimônias e Analista Sênior)",
-                "assunto": "PROTOCOLOS DE SEGURANÇA AVANÇADOS: GATOS NO TECLADO",
-                "corpo": "SOC, atenção para o protocolo G.A.T.O.S.\nSempre que um felino for detectado sobre um teclado, o analista deve:\n1. Oferecer ração ao gato.\n2. Tirar foto para o Instagram.\n3. Bloquear todas as portas USB por 30 minutos.\nEssas medidas são cruciais para a segurança do estado. Grato."
-            },
-            {
-                "avatar": self.avatar_gabe,
-                "remetente": "Gabe Newell (O único com a chave do cofre SOC)",
-                "assunto": "ONDE ESTÁ HALF DEAD 3? (PEDIDO DE ESCLARECIMENTO SÉRIO!)",
-                "corpo": "Prezados analistas.\nComo eu sou o único com a chave de criptografia do SOC, venho informar que o arquivo \n'halfdead3.sys'\nfoi acidentalmente deletado durante uma atualização do Steam. Eu juro que não sei o que aconteceu. De qualquer forma, o Doors 95 é ótimo. Abraços."
-            },
-            {
-                "avatar": self.avatar_indiano,
-                "remetente": "Analista Indiano (Tutorial do além)",
-                "assunto": "COMO RESOLVER ERRO DE SOC KERNEL (TUTORIAL GRÁTIS!)",
-                "corpo": "Hello guys! Tutorial grátis do além!\nSe o seu SOC Kernel der erro, faça:\n1. Pegue um incenso.\n2. Dê três voltas no servidor.\n3. Digite: 'FORMAT C: /Q /y'\n4. O problema desapareceu! Grato. Deixe o like!"
-            },
-            {
-                "avatar": self.avatar_ney,
-                "remetente": "Adulto Ney (Estagiário de Luxo do SOC)",
-                "assunto": "CONVITE PARA A FESTA DE LANÇAMENTO DO DOORS 96 (SECRETO!)",
-                "corpo": "SOC, seguinte. Estou organizando a festa de lançamento secreta do Doors 96.\nO local é: uma ilha particular.\nO traje é: camisas do PSG.\nO convite é: R$ 5.000,00 por pessoa.\nMande as coordenadas para o meu SOC_login: SOC_ESTAGIARIO_LUXO. Não espalha! É secreto!"
-            }
+            {"avatar": self.avatar_zoio, "remetente": "Everson Zoio",
+             "assunto": "DESAFIO HARDCORE: INSTALAR DOORS 95 NO MICROONDAS",
+             "corpo": "E ae, rapaziada! Zoio na area! O desafio é pesado: vou conectar meu microondas no Wi-Fi e tentar emular o Doors 95 nele. O bagulho é doido! Se o SOC detectar picos de temperatura anormal, é só o Gates mandando um update do além. Fica de boa! Falou!"},
+            {"avatar": self.avatar_abner, "remetente": "Abner Trovão",
+             "assunto": "VAZAMENTO DE DADOS IMPORTANTE (OU NÃO?)",
+             "corpo": "Bom dia, SOC. Detectei um vazamento de dados críticos no servidor.\nO arquivo se chama: \n'lista_compras_semanal.txt'\nEle contém informações confidenciais sobre o preço do pão e do leite. Peço providências imediatas antes que os h@ckers comprem tudo no mercado e eu fique sem lanche."},
+            {"avatar": self.avatar_carlinhos, "remetente": "Carlinhos",
+             "assunto": "PROTOCOLOS DE SEGURANÇA AVANÇADOS: GATOS NO TECLADO",
+             "corpo": "SOC, atenção para o protocolo G.A.T.O.S.\nSempre que um felino for detectado sobre um teclado, o analista deve:\n1. Oferecer ração ao gato.\n2. Tirar foto para o Instagram.\n3. Bloquear todas as portas USB por 30 minutos.\nEssas medidas são cruciais para a segurança do estado. Grato."},
+            {"avatar": self.avatar_gabe, "remetente": "Gabe Newell", "assunto": "ONDE ESTÁ HALF DEAD 3?",
+             "corpo": "Prezados analistas.\nComo eu sou o único com a chave de criptografia do SOC, venho informar que o arquivo \n'halfdead3.sys'\nfoi acidentalmente deletado durante uma atualização do Steam. Eu juro que não sei o que aconteceu. De qualquer forma, o Doors 95 é ótimo. Abraços."},
+            {"avatar": self.avatar_indiano, "remetente": "Analista Indiano",
+             "assunto": "COMO RESOLVER ERRO DE SOC KERNEL",
+             "corpo": "Hello guys! Tutorial grátis do além!\nSe o seu SOC Kernel der erro, faça:\n1. Pegue um incenso.\n2. Dê três voltas no servidor.\n3. Digite: 'FORMAT C: /Q /y'\n4. O problema desapareceu! Grato. Deixe o like!"},
+            {"avatar": self.avatar_ney, "remetente": "Adulto Ney",
+             "assunto": "CONVITE PARA A FESTA DE LANÇAMENTO DO DOORS 96",
+             "corpo": "SOC, seguinte. Estou organizando a festa de lançamento secreta do Doors 96.\nO local é: uma ilha particular.\nO traje é: camisas do PSG.\nO convite é: R$ 5.000,00 por pessoa.\nMande as coordenadas para o meu SOC_login: SOC_ESTAGIARIO_LUXO. Não espalha!"}
         ]
-
         self.email_idx_atual = 0
 
     def desenhar(self, tela):
@@ -148,8 +136,8 @@ class Desktop:
                              (x_botoes + largura_botao, y_botoes + altura_botao), 2)
 
         tela.blit(self.mini_logo, (x_botoes + 6, y_botoes + 3))
-        texto_doors = pygame.font.SysFont("tahoma", 16, bold=True).render("Doors", True, COR_TEXTO)
-        tela.blit(texto_doors, (x_botoes + 35, y_botoes + 6))
+        tela.blit(pygame.font.SysFont("tahoma", 16, bold=True).render("Doors", True, COR_TEXTO),
+                  (x_botoes + 35, y_botoes + 6))
 
         agora = datetime.now()
         texto_relogio = agora.strftime("%H:%M   %d/%m/%Y")
@@ -167,13 +155,9 @@ class Desktop:
                          (x_tray + largura_tray, y_tray + altura_tray), 2)
         pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_tray + largura_tray, y_tray),
                          (x_tray + largura_tray, y_tray + altura_tray), 2)
-
         tela.blit(superficie_relogio, (x_tray + 10, y_tray + 4))
 
-        centro_coluna_1 = 60
-        centro_coluna_2 = 180
-        start_y = 30
-        espacamento_y = 110
+        centro_coluna_1, centro_coluna_2, start_y, espacamento_y = 60, 180, 30, 110
 
         self.hitboxes["Minha Carreira"] = self.desenhar_icone_centralizado(tela, centro_coluna_1, start_y,
                                                                            "Minha Carreira", self.img_carreira)
@@ -210,10 +194,8 @@ class Desktop:
 
         tela.blit(texto_sombra, (pos_texto_x + 1, pos_texto_y + 1))
         tela.blit(texto, (pos_texto_x, pos_texto_y))
-
         return pygame.Rect(pos_img_x, y, largura_img, self.TAMANHO_MAX_ICONE + 20)
 
-    # --- A FUNÇÃO QUE FALTAVA VOLTOU AQUI ---
     def desenhar_menu_iniciar(self, tela):
         largura_menu = 220
         altura_menu = 320
@@ -227,7 +209,6 @@ class Desktop:
                          (x_menu + largura_menu, y_menu + altura_menu), 2)
         pygame.draw.line(tela, COR_TEXTO, (x_menu + largura_menu + 1, y_menu),
                          (x_menu + largura_menu + 1, y_menu + altura_menu), 1)
-
         pygame.draw.rect(tela, (0, 0, 128), (x_menu + 2, y_menu + 2, 35, altura_menu - 4))
 
         texto_rotacionado = pygame.transform.rotate(
@@ -249,11 +230,14 @@ class Desktop:
     def desenhar_janela(self, tela):
         largura_janela = 600
         altura_janela = 450
-        x_janela = (self.largura / 2) - (largura_janela / 2)
-        y_janela = (self.altura / 2) - (altura_janela / 2)
+
+        # USA AS VARIÁVEIS DE ESTADO AGORA
+        x_janela = self.janela_x
+        y_janela = self.janela_y
 
         self.hitbox_fundo_janela = pygame.Rect(x_janela, y_janela, largura_janela, altura_janela)
 
+        # Fundo e Bordas
         pygame.draw.rect(tela, COR_BARRA_TAREFAS, self.hitbox_fundo_janela)
         pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_janela, y_janela), (x_janela + largura_janela, y_janela), 2)
         pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_janela, y_janela), (x_janela, y_janela + altura_janela), 2)
@@ -262,13 +246,17 @@ class Desktop:
         pygame.draw.line(tela, COR_TEXTO, (x_janela, y_janela + altura_janela),
                          (x_janela + largura_janela, y_janela + altura_janela), 2)
 
+        # Barra de Título
         altura_titulo = 25
+        # Salvamos a hitbox da barra azul para o clique de arrastar (tirando o espaço do botão X)
+        self.hitbox_barra_titulo = pygame.Rect(x_janela + 3, y_janela + 3, largura_janela - 35, altura_titulo)
         pygame.draw.rect(tela, (0, 0, 128), (x_janela + 3, y_janela + 3, largura_janela - 6, altura_titulo))
 
         fonte_titulo = pygame.font.SysFont("tahoma", 14, bold=True)
         texto_titulo = fonte_titulo.render(self.janela_aberta, True, COR_BOTAO_BRIGHT)
         tela.blit(texto_titulo, (x_janela + 8, y_janela + 7))
 
+        # Botão [X]
         tamanho_x = 21
         x_fechar = x_janela + largura_janela - tamanho_x - 5
         y_fechar = y_janela + 5
@@ -281,68 +269,92 @@ class Desktop:
                          (x_fechar + tamanho_x, y_fechar + tamanho_x), 1)
         pygame.draw.line(tela, COR_TEXTO, (x_fechar, y_fechar + tamanho_x),
                          (x_fechar + tamanho_x, y_fechar + tamanho_x), 1)
-
         tela.blit(fonte_titulo.render("X", True, COR_TEXTO), (x_fechar + 6, y_fechar + 2))
 
+        # Injetando conteúdo
         if self.janela_aberta == "OutVision":
             self.desenhar_conteudo_email(tela, x_janela, y_janela, largura_janela, altura_janela, altura_titulo)
 
-    def tratar_clique(self, pos_mouse):
-        if self.janela_aberta:
-            if self.hitbox_fechar_janela and self.hitbox_fechar_janela.collidepoint(pos_mouse):
-                self.janela_aberta = None
-                return "Fechou Janela"
+    # --- NOVO SISTEMA DE TRATAMENTO DE EVENTOS (Substitui o tratar_clique) ---
+    def tratar_eventos(self, evento):
+        # 1. Quando o jogador APERTA o botão do mouse
+        if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+            pos_mouse = evento.pos
 
-            if self.janela_aberta == "OutVision":
-                if self.hitbox_btn_anterior and self.hitbox_btn_anterior.collidepoint(pos_mouse):
-                    self.email_idx_atual = (self.email_idx_atual - 1) % len(self.emails_humoristicos)
-                    return "E-mail Anterior"
-                elif self.hitbox_btn_proximo and self.hitbox_btn_proximo.collidepoint(pos_mouse):
-                    self.email_idx_atual = (self.email_idx_atual + 1) % len(self.emails_humoristicos)
-                    return "Próximo E-mail"
+            # Checa os elementos da janela PRIMEIRO
+            if self.janela_aberta:
+                # Clicou no X?
+                if self.hitbox_fechar_janela and self.hitbox_fechar_janela.collidepoint(pos_mouse):
+                    self.janela_aberta = None
+                    return
 
-            elif self.hitbox_fundo_janela and self.hitbox_fundo_janela.collidepoint(pos_mouse):
-                return "Clique na janela"
+                # Clicou na BARRA AZUL de Título? (Inicia o arrasto)
+                if self.hitbox_barra_titulo and self.hitbox_barra_titulo.collidepoint(pos_mouse):
+                    self.arrastando_janela = True
+                    # Calcula onde o mouse segurou a janela para não teleportar ela pro ponteiro
+                    self.offset_x = pos_mouse[0] - self.janela_x
+                    self.offset_y = pos_mouse[1] - self.janela_y
+                    return
 
-        clicou_em_algo = False
-        for nome_icone, hitbox in self.hitboxes.items():
-            if hitbox.collidepoint(pos_mouse):
-                clicou_em_algo = True
+                # Clicou nos botões do OutVision?
+                if self.janela_aberta == "OutVision":
+                    if self.hitbox_btn_anterior and self.hitbox_btn_anterior.collidepoint(pos_mouse):
+                        self.email_idx_atual = (self.email_idx_atual - 1) % len(self.emails_humoristicos)
+                        return
+                    elif self.hitbox_btn_proximo and self.hitbox_btn_proximo.collidepoint(pos_mouse):
+                        self.email_idx_atual = (self.email_idx_atual + 1) % len(self.emails_humoristicos)
+                        return
 
-                if nome_icone == "Botao Doors":
-                    self.menu_aberto = not self.menu_aberto
-                else:
-                    self.menu_aberto = False
-                    self.janela_aberta = nome_icone
+                # Clicou no meio da janela? (Não faz nada, mas impede de clicar nos ícones atrás)
+                if self.hitbox_fundo_janela and self.hitbox_fundo_janela.collidepoint(pos_mouse):
+                    return
 
-                    if nome_icone == "OutVision":
-                        self.email_idx_atual = 0
+                    # Checa Ícones da Área de Trabalho
+            clicou_em_algo = False
+            for nome_icone, hitbox in self.hitboxes.items():
+                if hitbox.collidepoint(pos_mouse):
+                    clicou_em_algo = True
 
-                return nome_icone
+                    if nome_icone == "Botao Doors":
+                        self.menu_aberto = not self.menu_aberto
+                    else:
+                        self.menu_aberto = False
+                        self.janela_aberta = nome_icone
+                        # Centraliza a janela toda vez que um App NOVO for aberto
+                        self.janela_x = (self.largura / 2) - 300
+                        self.janela_y = (self.altura / 2) - 225
 
-        if not clicou_em_algo:
-            self.menu_aberto = False
+                        if nome_icone == "OutVision":
+                            self.email_idx_atual = 0
 
-        return None
+                    return
+
+            if not clicou_em_algo:
+                self.menu_aberto = False
+
+        # 2. Quando o jogador SOLTA o botão do mouse
+        elif evento.type == pygame.MOUSEBUTTONUP and evento.button == 1:
+            self.arrastando_janela = False  # Para de arrastar
+
+        # 3. Quando o jogador MOVE o mouse pela tela
+        elif evento.type == pygame.MOUSEMOTION:
+            if self.arrastando_janela and self.janela_aberta:
+                # Atualiza a posição da janela seguindo o mouse (descontando o local exato do clique)
+                self.janela_x = evento.pos[0] - self.offset_x
+                self.janela_y = evento.pos[1] - self.offset_y
 
     def desenhar_conteudo_email(self, tela, x_j, y_j, w_j, h_j, h_titulo):
         email = self.emails_humoristicos[self.email_idx_atual]
-
         y_conteudo = y_j + h_titulo + 10
         x_conteudo = x_j + 10
-
         tela.blit(email["avatar"], (x_conteudo, y_conteudo))
-
         x_textos = x_conteudo + 80 + 15
         y_textos = y_conteudo
 
         fonte_cabecalho = pygame.font.SysFont("tahoma", 13, bold=True)
-
         tela.blit(fonte_cabecalho.render("De:", True, COR_TEXTO), (x_textos, y_textos))
         tela.blit(self.fonte_padrao.render(email["remetente"], True, COR_TEXTO), (x_textos + 30, y_textos))
-
         y_textos += 20
-
         tela.blit(fonte_cabecalho.render("Assunto:", True, COR_TEXTO), (x_textos, y_textos))
         largura_max_assunto = w_j - (x_textos - x_j) - 15
         self.desenhar_texto_com_quebra(tela, email["assunto"], self.fonte_padrao, x_textos + 60, y_textos,
@@ -350,13 +362,11 @@ class Desktop:
 
         y_corpo = y_conteudo + 80 + 20
         largura_max_corpo = w_j - 30
-
         pygame.draw.line(tela, COR_BOTAO, (x_conteudo, y_corpo - 10), (x_j + w_j - 10, y_corpo - 10), 1)
         self.desenhar_texto_com_quebra(tela, email["corpo"], self.fonte_padrao, x_conteudo, y_corpo, largura_max_corpo)
 
         largura_btn = 90
         altura_btn = 26
-
         x_btn_prox = x_j + w_j - largura_btn - 15
         y_btn = y_j + h_j - altura_btn - 15
         x_btn_ant = x_btn_prox - largura_btn - 10
@@ -370,7 +380,6 @@ class Desktop:
             pygame.draw.line(tela, COR_BOTAO_BRIGHT, (retangulo.x, retangulo.y), (retangulo.x, retangulo.bottom), 2)
             pygame.draw.line(tela, COR_BOTAO, (retangulo.right, retangulo.y), (retangulo.right, retangulo.bottom), 2)
             pygame.draw.line(tela, COR_BOTAO, (retangulo.x, retangulo.bottom), (retangulo.right, retangulo.bottom), 2)
-
             sup_texto = self.fonte_padrao.render(texto, True, COR_TEXTO)
             pos_x = retangulo.x + (largura_btn // 2) - (sup_texto.get_width() // 2)
             pos_y = retangulo.y + (altura_btn // 2) - (sup_texto.get_height() // 2)
@@ -386,26 +395,19 @@ class Desktop:
     def desenhar_texto_com_quebra(self, tela, texto, fonte, x, y, largura_max):
         paragrafos = texto.split('\n')
         y_atual = y
-
         for paragrafo in paragrafos:
             palavras = paragrafo.split(' ')
             linha_atual = ""
-
             for palavra in palavras:
                 linha_teste = linha_atual + palavra + " "
-                largura_linha_teste = fonte.size(linha_teste)[0]
-
-                if largura_linha_teste <= largura_max:
+                if fonte.size(linha_teste)[0] <= largura_max:
                     linha_atual = linha_teste
                 else:
-                    superficie_texto = fonte.render(linha_atual.strip(), True, COR_TEXTO)
-                    tela.blit(superficie_texto, (x, y_atual))
-                    y_atual += superficie_texto.get_height() + 2
+                    tela.blit(fonte.render(linha_atual.strip(), True, COR_TEXTO), (x, y_atual))
+                    y_atual += fonte.size(linha_atual.strip())[1] + 2
                     linha_atual = palavra + " "
-
-            superficie_texto = fonte.render(linha_atual.strip(), True, COR_TEXTO)
-            tela.blit(superficie_texto, (x, y_atual))
-            y_atual += superficie_texto.get_height() + 10
+            tela.blit(fonte.render(linha_atual.strip(), True, COR_TEXTO), (x, y_atual))
+            y_atual += fonte.size(linha_atual.strip())[1] + 10
 
 
 class MenuPrincipal:
@@ -427,16 +429,13 @@ class MenuPrincipal:
         textos_botoes = ["INICIAR TURNO", "SAIR"]
         y_atual = 400
         self.hitboxes.clear()
-
         for texto in textos_botoes:
             superficie_texto = self.fonte_botoes.render(texto, True, (220, 220, 220))
             retangulo_texto = superficie_texto.get_rect(center=(self.largura // 2, y_atual))
             retangulo_botao = retangulo_texto.inflate(60, 20)
-
             pygame.draw.rect(tela, (40, 40, 40), retangulo_botao)
             pygame.draw.rect(tela, (100, 100, 100), retangulo_botao, 3)
             tela.blit(superficie_texto, retangulo_texto)
-
             self.hitboxes[texto] = retangulo_botao
             y_atual += 100
 
@@ -515,11 +514,7 @@ class TelaBoot:
             self.linhas_exibidas.append(nova_linha)
             self.indice_linha_atual += 1
             self.contador_frames = 0
-
-            if "LOADING SOC_KERNEL.SYS" in nova_linha:
-                self.velocidade_carregamento = 30
-            else:
-                self.velocidade_carregamento = 6
+            self.velocidade_carregamento = 30 if "LOADING SOC_KERNEL.SYS" in nova_linha else 6
 
         y_item = self.altura - 30
         x_item = 50
@@ -528,7 +523,6 @@ class TelaBoot:
             superficie_texto = self.fonte_log.render(linha, True, COR_TERMINAL)
             tela.blit(superficie_texto, (x_item, y_item))
             y_item -= 22
-
             if y_item < 180:
                 break
 

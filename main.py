@@ -1,6 +1,5 @@
 import pygame
 import sys
-# Adicionamos a TelaBoot no import
 from src.ui import Desktop, MenuPrincipal, TelaBoot
 
 pygame.init()
@@ -26,28 +25,24 @@ def main():
             if evento.type == pygame.QUIT:
                 rodando = False
 
-            if evento.type == pygame.MOUSEBUTTONDOWN:
-                if evento.button == 1:
-                    if estado_jogo == "MENU":
-                        acao = menu_principal.tratar_clique(evento.pos)
-                        if acao == "INICIAR TURNO":
-                            # Quando clica em iniciar, vai para a tela de transição
-                            estado_jogo = "BOOT"
-                            tela_boot.resetar()  # Garante que a animação comece do zero
+            # Se for MENU, só ligamos para os cliques
+            if estado_jogo == "MENU":
+                if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+                    acao = menu_principal.tratar_clique(evento.pos)
+                    if acao == "INICIAR TURNO":
+                        estado_jogo = "BOOT"
+                        tela_boot.resetar()
 
-                    elif estado_jogo == "DESKTOP":
-                        desktop_os.tratar_clique(evento.pos)
+                        # Se for DESKTOP, passamos o EVENTO INTEIRO (cliques, solturas e movimento)
+            elif estado_jogo == "DESKTOP":
+                desktop_os.tratar_eventos(evento)
 
-        # DESENHO DA MÁQUINA DE ESTADOS
         if estado_jogo == "MENU":
             menu_principal.desenhar(TELA)
-
         elif estado_jogo == "BOOT":
-            # A função desenhar da TelaBoot retorna True quando acaba
             animacao_terminou = tela_boot.desenhar(TELA)
             if animacao_terminou:
                 estado_jogo = "DESKTOP"
-
         elif estado_jogo == "DESKTOP":
             desktop_os.desenhar(TELA)
 
