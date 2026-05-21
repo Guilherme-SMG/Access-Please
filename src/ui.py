@@ -46,11 +46,12 @@ class Desktop:
 
         self.hitboxes = {}
         self.menu_aberto = False
+        self.itens_menu = ["Programas", "Documentos", "Configurações", "Pesquisar", "Ajuda", "Desligar..."]
+        self.hitboxes_itens_menu = []
 
-        # --- NOVO GERENCIADOR DE MÚLTIPLAS JANELAS ---
-        self.janelas_abertas = []  # Lista que dita a ordem de desenho (o último fica por cima)
-        self.janelas_pos = {}  # Dicionário: nome_app -> [x, y]
-        self.janela_arrastada = None  # Nome do app sendo arrastado
+        self.janelas_abertas = []
+        self.janelas_pos = {}
+        self.janela_arrastada = None
         self.offset_x = 0
         self.offset_y = 0
 
@@ -73,7 +74,6 @@ class Desktop:
         self.avatar_indiano = carregar_avatar("Indiano.jpg")
         self.avatar_ney = carregar_avatar("ney.jpg")
 
-        # --- FILA DE REQUISIÇÕES (TEXTOS LIMPOS PARA VOCÊ EDITAR) ---
         self.fila_requisicoes = [
             {"avatar": self.avatar_zoio, "remetente": "Everson Zoio", "cargo": "Estagiário",
              "acesso": "WIFI_MICROONDAS", "corpo": "[ ESCREVA AQUI O PEDIDO DO ZOIO ]"},
@@ -92,7 +92,6 @@ class Desktop:
 
     def desenhar(self, tela):
         tela.fill(COR_FUNDO_DESKTOP)
-
         altura_barra = 40
         pygame.draw.rect(tela, COR_BARRA_TAREFAS, (0, self.altura - altura_barra, self.largura, altura_barra))
         pygame.draw.line(tela, COR_BOTAO_BRIGHT, (0, self.altura - altura_barra),
@@ -128,22 +127,14 @@ class Desktop:
         agora = datetime.now()
         texto_relogio = agora.strftime("%H:%M   %d/%m/%Y")
         superficie_relogio = self.fonte_padrao.render(texto_relogio, True, COR_TEXTO)
-        largura_tray = superficie_relogio.get_width() + 20
-        altura_tray = 26
-        x_tray = self.largura - largura_tray - 5
+        x_tray = self.largura - superficie_relogio.get_width() - 25
         y_tray = self.altura - altura_barra + 7
-
-        pygame.draw.rect(tela, COR_BARRA_TAREFAS, (x_tray, y_tray, largura_tray, altura_tray))
-        pygame.draw.line(tela, COR_BOTAO, (x_tray, y_tray), (x_tray + largura_tray, y_tray), 2)
-        pygame.draw.line(tela, COR_BOTAO, (x_tray, y_tray), (x_tray, y_tray + altura_tray), 2)
-        pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_tray, y_tray + altura_tray),
-                         (x_tray + largura_tray, y_tray + altura_tray), 2)
-        pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_tray + largura_tray, y_tray),
-                         (x_tray + largura_tray, y_tray + altura_tray), 2)
+        pygame.draw.rect(tela, COR_BARRA_TAREFAS, (x_tray, y_tray, superficie_relogio.get_width() + 20, 26))
+        pygame.draw.line(tela, COR_BOTAO, (x_tray, y_tray), (x_tray + superficie_relogio.get_width() + 20, y_tray), 2)
+        pygame.draw.line(tela, COR_BOTAO, (x_tray, y_tray), (x_tray, y_tray + 26), 2)
         tela.blit(superficie_relogio, (x_tray + 10, y_tray + 4))
 
         centro_coluna_1, centro_coluna_2, start_y, espacamento_y = 60, 180, 30, 110
-
         self.hitboxes["Minha Carreira"] = self.desenhar_icone_centralizado(tela, centro_coluna_1, start_y,
                                                                            "Minha Carreira", self.img_carreira)
         self.hitboxes["OutVision"] = self.desenhar_icone_centralizado(tela, centro_coluna_1, start_y + espacamento_y,
@@ -151,7 +142,6 @@ class Desktop:
         self.hitboxes["Terminal SOC"] = self.desenhar_icone_centralizado(tela, centro_coluna_1,
                                                                          start_y + (espacamento_y * 2), "Terminal SOC",
                                                                          self.img_terminal)
-
         self.hitboxes["Regras"] = self.desenhar_icone_centralizado(tela, centro_coluna_2, start_y, "Regras",
                                                                    self.img_regras)
         self.hitboxes["Arquivos"] = self.desenhar_icone_centralizado(tela, centro_coluna_2, start_y + espacamento_y,
@@ -160,7 +150,6 @@ class Desktop:
                                                                         start_y + (espacamento_y * 2), "Half Dead 3",
                                                                         self.img_halfdead)
 
-        # Desenha todas as janelas na ordem correta
         for app_nome in self.janelas_abertas:
             self.desenhar_uma_janela(tela, app_nome)
 
@@ -184,20 +173,24 @@ class Desktop:
         altura_menu = 320
         x_menu = 0
         y_menu = self.altura - 40 - altura_menu
+
         pygame.draw.rect(tela, COR_BARRA_TAREFAS, (x_menu, y_menu, largura_menu, altura_menu))
         pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_menu, y_menu), (x_menu + largura_menu, y_menu), 2)
         pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_menu, y_menu), (x_menu, y_menu + altura_menu), 2)
         pygame.draw.line(tela, COR_BOTAO, (x_menu + largura_menu, y_menu),
                          (x_menu + largura_menu, y_menu + altura_menu), 2)
-        pygame.draw.line(tela, COR_TEXTO, (x_menu + largura_menu + 1, y_menu),
-                         (x_menu + largura_menu + 1, y_menu + altura_menu), 1)
         pygame.draw.rect(tela, (0, 0, 128), (x_menu + 2, y_menu + 2, 35, altura_menu - 4))
+
         texto_rotacionado = pygame.transform.rotate(
             pygame.font.SysFont("tahoma", 20, bold=True).render("Doors OS", True, COR_BOTAO_BRIGHT), 90)
         tela.blit(texto_rotacionado, (x_menu + 7, y_menu + altura_menu - texto_rotacionado.get_height() - 10))
-        itens = ["Programas", "Documentos", "Configurações", "Pesquisar", "Ajuda", "Desligar..."]
+
+        self.hitboxes_itens_menu = []
         y_item = y_menu + 20
-        for item in itens:
+        for item in self.itens_menu:
+            rect_item = pygame.Rect(x_menu + 40, y_item - 5, largura_menu - 45, 35)
+            self.hitboxes_itens_menu.append((item, rect_item))
+
             tela.blit(self.fonte_padrao.render(item, True, COR_TEXTO), (x_menu + 50, y_item))
             if item == "Ajuda":
                 y_linha = y_item + 30
@@ -208,8 +201,7 @@ class Desktop:
             y_item += 40
 
     def desenhar_uma_janela(self, tela, app_nome):
-        largura_janela = 600
-        altura_janela = 450
+        largura_janela, altura_janela = 600, 450
         x_janela, y_janela = self.janelas_pos[app_nome]
 
         pygame.draw.rect(tela, COR_BARRA_TAREFAS, (x_janela, y_janela, largura_janela, altura_janela))
@@ -222,22 +214,13 @@ class Desktop:
 
         altura_titulo = 25
         pygame.draw.rect(tela, (0, 0, 128), (x_janela + 3, y_janela + 3, largura_janela - 6, altura_titulo))
-
-        # A janela ativa (última da lista) tem título branco, as inativas ficam cinzas
         cor_tit = COR_BOTAO_BRIGHT if app_nome == self.janelas_abertas[-1] else (192, 192, 192)
         tela.blit(pygame.font.SysFont("tahoma", 14, bold=True).render(app_nome, True, cor_tit),
                   (x_janela + 8, y_janela + 7))
 
-        tamanho_x = 21
-        x_fechar = x_janela + largura_janela - tamanho_x - 5
+        x_fechar = x_janela + largura_janela - 26
         y_fechar = y_janela + 5
-        pygame.draw.rect(tela, COR_BARRA_TAREFAS, (x_fechar, y_fechar, tamanho_x, tamanho_x))
-        pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_fechar, y_fechar), (x_fechar + tamanho_x, y_fechar), 1)
-        pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_fechar, y_fechar), (x_fechar, y_fechar + tamanho_x), 1)
-        pygame.draw.line(tela, COR_TEXTO, (x_fechar + tamanho_x, y_fechar),
-                         (x_fechar + tamanho_x, y_fechar + tamanho_x), 1)
-        pygame.draw.line(tela, COR_TEXTO, (x_fechar, y_fechar + tamanho_x),
-                         (x_fechar + tamanho_x, y_fechar + tamanho_x), 1)
+        pygame.draw.rect(tela, COR_BARRA_TAREFAS, (x_fechar, y_fechar, 21, 21))
         tela.blit(pygame.font.SysFont("tahoma", 14, bold=True).render("X", True, COR_TEXTO),
                   (x_fechar + 6, y_fechar + 2))
 
@@ -247,96 +230,99 @@ class Desktop:
             self.desenhar_conteudo_regras(tela, x_janela, y_janela, largura_janela, altura_titulo)
         elif app_nome == "Terminal SOC":
             self.desenhar_conteudo_terminal(tela, x_janela, y_janela, largura_janela, altura_janela, altura_titulo)
+        else:
+            # Qualquer outro aplicativo vai desenhar um aviso de "Em breve" genérico
+            aviso = self.fonte_padrao.render("Aplicativo indisponível.", True, COR_TEXTO)
+            tela.blit(aviso, (x_janela + 20, y_janela + altura_titulo + 20))
 
     def tratar_eventos(self, evento):
         if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
             pos_mouse = evento.pos
 
-            # 1. Verifica clique nas janelas abertas (de cima para baixo)
+            # 1. Isolando o Menu Iniciar
+            if self.menu_aberto:
+                rect_menu_inteiro = pygame.Rect(0, self.altura - 40 - 320, 220, 320)
+
+                if rect_menu_inteiro.collidepoint(pos_mouse):
+                    for item_nome, item_rect in self.hitboxes_itens_menu:
+                        if item_rect.collidepoint(pos_mouse):
+                            self.menu_aberto = False
+                            # Se for o botão Desligar, dispara o evento real
+                            if item_nome == "Desligar...":
+                                return "SHUTDOWN"
+                            else:
+                                # Se for qualquer outro, abre uma janela genérica para dar o visual
+                                if item_nome not in self.janelas_abertas:
+                                    self.janelas_abertas.append(item_nome)
+                                    offset = len(self.janelas_abertas) * 30
+                                    self.janelas_pos[item_nome] = [200 + offset, 150 + offset]
+                                else:
+                                    self.janelas_abertas.append(
+                                        self.janelas_abertas.pop(self.janelas_abertas.index(item_nome)))
+                            return None
+                    return None
+                else:
+                    if not self.hitboxes.get("Botao Doors").collidepoint(pos_mouse):
+                        self.menu_aberto = False
+
+            # 2. Verifica clique nas janelas
             for i in range(len(self.janelas_abertas) - 1, -1, -1):
                 app_nome = self.janelas_abertas[i]
                 x_j, y_j = self.janelas_pos[app_nome]
-                w_j, h_j = 600, 450
-                h_titulo = 25
-
-                rect_janela = pygame.Rect(x_j, y_j, w_j, h_j)
-                rect_titulo = pygame.Rect(x_j + 3, y_j + 3, w_j - 35, h_titulo)
-                rect_fechar = pygame.Rect(x_j + w_j - 26, y_j + 5, 21, 21)
+                rect_janela = pygame.Rect(x_j, y_j, 600, 450)
+                rect_titulo = pygame.Rect(x_j + 3, y_j + 3, 565, 25)
+                rect_fechar = pygame.Rect(x_j + 574, y_j + 5, 21, 21)
 
                 if rect_fechar.collidepoint(pos_mouse):
                     self.janelas_abertas.remove(app_nome)
-                    return
+                    return None
 
                 if rect_titulo.collidepoint(pos_mouse):
                     self.janela_arrastada = app_nome
-                    self.offset_x = pos_mouse[0] - x_j
-                    self.offset_y = pos_mouse[1] - y_j
-                    self.janelas_abertas.remove(app_nome)
-                    self.janelas_abertas.append(app_nome)
-                    return
+                    self.offset_x, self.offset_y = pos_mouse[0] - x_j, pos_mouse[1] - y_j
+                    self.janelas_abertas.append(self.janelas_abertas.pop(i))
+                    return None
 
-                # Se clicou num botão E essa é a janela da frente (i == len - 1)
                 if i == len(self.janelas_abertas) - 1:
                     if app_nome == "OutVision":
-                        rect_ant = pygame.Rect(x_j + w_j - 90 - 15 - 90 - 10, y_j + h_j - 26 - 15, 90, 26)
-                        rect_prox = pygame.Rect(x_j + w_j - 90 - 15, y_j + h_j - 26 - 15, 90, 26)
-                        if rect_ant.collidepoint(pos_mouse):
+                        if pygame.Rect(x_j + 405, y_j + 409, 90, 26).collidepoint(pos_mouse):
                             self.req_atual = max(0, self.req_atual - 1)
-                            return
-                        elif rect_prox.collidepoint(pos_mouse):
+                        elif pygame.Rect(x_j + 495, y_j + 409, 90, 26).collidepoint(pos_mouse):
                             self.req_atual = min(len(self.fila_requisicoes) - 1, self.req_atual + 1)
-                            return
+                    elif app_nome == "Terminal SOC" and len(self.fila_requisicoes) > 0:
+                        if pygame.Rect(x_j + 130, y_j + 370, 150, 50).collidepoint(pos_mouse) or pygame.Rect(x_j + 320,
+                                                                                                             y_j + 370,
+                                                                                                             150,
+                                                                                                             50).collidepoint(
+                                pos_mouse):
+                            self.fila_requisicoes.pop(self.req_atual)
+                            self.req_atual = max(0, min(self.req_atual, len(self.fila_requisicoes) - 1))
 
-                    elif app_nome == "Terminal SOC":
-                        if self.req_atual < len(self.fila_requisicoes):
-                            rect_aprovar = pygame.Rect(x_j + (w_j // 2) - 150 - 20, y_j + h_j - 50 - 30, 150, 50)
-                            rect_negar = pygame.Rect(x_j + (w_j // 2) + 20, y_j + h_j - 50 - 30, 150, 50)
-                            if rect_aprovar.collidepoint(pos_mouse) or rect_negar.collidepoint(pos_mouse):
-                                self.fila_requisicoes.pop(self.req_atual)
-                                if self.req_atual >= len(self.fila_requisicoes) and self.req_atual > 0:
-                                    self.req_atual -= 1
-                                return
-
-                # Se clicou no corpo de qualquer janela, apenas traz ela para frente
                 if rect_janela.collidepoint(pos_mouse):
-                    self.janelas_abertas.remove(app_nome)
-                    self.janelas_abertas.append(app_nome)
-                    return
+                    self.janelas_abertas.append(self.janelas_abertas.pop(i))
+                    return None
 
-                    # 2. Se não clicou em janela nenhuma, verifica a Área de Trabalho
-            clicou_em_algo = False
+            # 3. Área de Trabalho
             for nome_icone, hitbox in self.hitboxes.items():
                 if hitbox.collidepoint(pos_mouse):
-                    clicou_em_algo = True
                     if nome_icone == "Botao Doors":
                         self.menu_aberto = not self.menu_aberto
                     else:
                         self.menu_aberto = False
-
                         if nome_icone not in self.janelas_abertas:
                             self.janelas_abertas.append(nome_icone)
-                            # Efeito cascata para as janelas não nascerem exatamente em cima da outra
                             offset = len(self.janelas_abertas) * 30
-                            self.janelas_pos[nome_icone] = [(self.largura / 2) - 300 + offset,
-                                                            (self.altura / 2) - 225 + offset]
+                            self.janelas_pos[nome_icone] = [200 + offset, 150 + offset]
                         else:
-                            self.janelas_abertas.remove(nome_icone)
-                            self.janelas_abertas.append(nome_icone)
-
-                        if nome_icone == "OutVision":
-                            self.req_atual = 0
-                    return
-
-            if not clicou_em_algo:
-                self.menu_aberto = False
+                            self.janelas_abertas.append(
+                                self.janelas_abertas.pop(self.janelas_abertas.index(nome_icone)))
+                    return None
+            return None
 
         elif evento.type == pygame.MOUSEBUTTONUP and evento.button == 1:
             self.janela_arrastada = None
-
-        elif evento.type == pygame.MOUSEMOTION:
-            if self.janela_arrastada:
-                self.janelas_pos[self.janela_arrastada][0] = evento.pos[0] - self.offset_x
-                self.janelas_pos[self.janela_arrastada][1] = evento.pos[1] - self.offset_y
+        elif evento.type == pygame.MOUSEMOTION and self.janela_arrastada:
+            self.janelas_pos[self.janela_arrastada] = [evento.pos[0] - self.offset_x, evento.pos[1] - self.offset_y]
 
     def desenhar_botao_os(self, tela, retangulo, texto, cor_fundo=COR_BARRA_TAREFAS):
         pygame.draw.rect(tela, cor_fundo, retangulo)
@@ -345,99 +331,49 @@ class Desktop:
         pygame.draw.line(tela, COR_BOTAO, (retangulo.right, retangulo.y), (retangulo.right, retangulo.bottom), 2)
         pygame.draw.line(tela, COR_BOTAO, (retangulo.x, retangulo.bottom), (retangulo.right, retangulo.bottom), 2)
         sup_texto = self.fonte_padrao.render(texto, True, COR_TEXTO)
-        pos_x = retangulo.x + (retangulo.width // 2) - (sup_texto.get_width() // 2)
-        pos_y = retangulo.y + (retangulo.height // 2) - (sup_texto.get_height() // 2)
-        tela.blit(sup_texto, (pos_x, pos_y))
+        tela.blit(sup_texto,
+                  (retangulo.centerx - sup_texto.get_width() // 2, retangulo.centery - sup_texto.get_height() // 2))
 
     def desenhar_conteudo_outvision(self, tela, x_j, y_j, w_j, h_j, h_titulo):
         if len(self.fila_requisicoes) == 0:
-            tela.blit(self.fonte_padrao.render("Nenhuma requisição pendente. Bom trabalho!", True, COR_TEXTO),
+            tela.blit(self.fonte_padrao.render("Nenhuma requisição pendente.", True, COR_TEXTO),
                       (x_j + 20, y_j + h_titulo + 20))
             return
-
         req = self.fila_requisicoes[self.req_atual]
-        y_conteudo = y_j + h_titulo + 10
-        x_conteudo = x_j + 10
-
-        tela.blit(req["avatar"], (x_conteudo, y_conteudo))
-        x_textos = x_conteudo + 80 + 15
-        y_textos = y_conteudo
-
+        tela.blit(req["avatar"], (x_j + 10, y_j + h_titulo + 10))
         fonte_bold = pygame.font.SysFont("tahoma", 13, bold=True)
-        tela.blit(fonte_bold.render("De:", True, COR_TEXTO), (x_textos, y_textos))
+        tela.blit(fonte_bold.render("De:", True, COR_TEXTO), (x_j + 105, y_j + h_titulo + 10))
         tela.blit(self.fonte_padrao.render(f"{req['remetente']} ({req['cargo']})", True, COR_TEXTO),
-                  (x_textos + 30, y_textos))
-        y_textos += 20
-        tela.blit(fonte_bold.render("Acesso Solicitado:", True, COR_TEXTO), (x_textos, y_textos))
-        tela.blit(self.fonte_padrao.render(req["acesso"], True, (200, 0, 0)), (x_textos + 130, y_textos))
-
-        y_corpo = y_conteudo + 80 + 20
-        pygame.draw.line(tela, COR_BOTAO, (x_conteudo, y_corpo - 10), (x_j + w_j - 10, y_corpo - 10), 1)
-        tela.blit(fonte_bold.render("Justificativa:", True, COR_TEXTO), (x_conteudo, y_corpo))
-        self.desenhar_texto_com_quebra(tela, req["corpo"], self.fonte_padrao, x_conteudo, y_corpo + 20, w_j - 30)
-
-        largura_btn = 90
-        x_btn_prox = x_j + w_j - largura_btn - 15
-        y_btn = y_j + h_j - 26 - 15
-        x_btn_ant = x_btn_prox - largura_btn - 10
-
-        self.desenhar_botao_os(tela, pygame.Rect(x_btn_ant, y_btn, largura_btn, 26), "< Anterior")
-        self.desenhar_botao_os(tela, pygame.Rect(x_btn_prox, y_btn, largura_btn, 26), "Próximo >")
-
+                  (x_j + 135, y_j + h_titulo + 10))
+        tela.blit(fonte_bold.render("Acesso:", True, COR_TEXTO), (x_j + 105, y_j + h_titulo + 30))
+        tela.blit(self.fonte_padrao.render(req["acesso"], True, (200, 0, 0)), (x_j + 160, y_j + h_titulo + 30))
+        pygame.draw.line(tela, COR_BOTAO, (x_j + 10, y_j + h_titulo + 100), (x_j + w_j - 10, y_j + h_titulo + 100), 1)
+        self.desenhar_texto_com_quebra(tela, req["corpo"], self.fonte_padrao, x_j + 15, y_j + h_titulo + 115, w_j - 30)
+        self.desenhar_botao_os(tela, pygame.Rect(x_j + 405, y_j + 409, 90, 26), "< Anterior")
+        self.desenhar_botao_os(tela, pygame.Rect(x_j + 495, y_j + 409, 90, 26), "Próximo >")
         texto_contador = f"Req: {self.req_atual + 1}/{len(self.fila_requisicoes)}"
-        tela.blit(self.fonte_padrao.render(texto_contador, True, COR_BOTAO), (x_btn_ant - 60, y_btn + 5))
+        tela.blit(self.fonte_padrao.render(texto_contador, True, COR_BOTAO), (x_j + 405 - 60, y_j + 409 + 5))
 
     def desenhar_conteudo_regras(self, tela, x_j, y_j, w_j, h_titulo):
-        # Aumentei o fundo para caber melhor os textos e limpei o template
-        rect_fundo = pygame.Rect(x_j + 5, y_j + h_titulo + 5, w_j - 10, 450 - h_titulo - 10)
-        pygame.draw.rect(tela, (255, 255, 255), rect_fundo)
-        pygame.draw.rect(tela, COR_BOTAO, rect_fundo, 2)
-
-        texto_regras = """MANUAL DE CONDUTA E ACESSO SOC (V1.0)
-
-[ ESCREVA A SUA REGRA NÚMERO 1 AQUI ]
-
-[ ESCREVA A SUA REGRA NÚMERO 2 AQUI ]
-
-[ ESCREVA A SUA REGRA NÚMERO 3 AQUI ]
-
-[ ESCREVA A SUA REGRA NÚMERO 4 AQUI ]"""
-
+        pygame.draw.rect(tela, (255, 255, 255), (x_j + 5, y_j + h_titulo + 5, w_j - 10, 410))
+        pygame.draw.rect(tela, COR_BOTAO, (x_j + 5, y_j + h_titulo + 5, w_j - 10, 410), 2)
+        texto_regras = "MANUAL DE CONDUTA SOC (V1.0)\n\n[REGRAS AQUI]"
         self.desenhar_texto_com_quebra(tela, texto_regras, self.fonte_padrao, x_j + 15, y_j + h_titulo + 15, w_j - 30)
 
     def desenhar_conteudo_terminal(self, tela, x_j, y_j, w_j, h_j, h_titulo):
-        rect_fundo = pygame.Rect(x_j + 5, y_j + h_titulo + 5, w_j - 10, h_j - h_titulo - 10)
-        pygame.draw.rect(tela, (15, 15, 15), rect_fundo)
-
+        pygame.draw.rect(tela, (15, 15, 15), (x_j + 5, y_j + h_titulo + 5, w_j - 10, h_j - h_titulo - 10))
         if len(self.fila_requisicoes) == 0:
-            tela.blit(self.fonte_terminal.render("SISTEMA OCIOSO. NENHUMA REQUISIÇÃO PENDENTE.", True, COR_TERMINAL),
+            tela.blit(self.fonte_terminal.render("SISTEMA OCIOSO.", True, COR_TERMINAL),
                       (x_j + 20, y_j + h_titulo + 20))
             return
-
         req = self.fila_requisicoes[self.req_atual]
-
-        textos = [
-            "SOC SECURE TERMINAL v4.1",
-            "---------------------------------------",
-            f"REQUISIÇÃO ATUAL: #{self.req_atual + 1001}",
-            f"SOLICITANTE: {req['remetente']}",
-            f"CARGO:       {req['cargo']}",
-            f"ACESSO ALVO: {req['acesso']}",
-            "---------------------------------------",
-            "AGUARDANDO DECISÃO DO ANALISTA..."
-        ]
-
-        y_linha = y_j + h_titulo + 20
-        for linha in textos:
-            tela.blit(self.fonte_terminal.render(linha, True, COR_TERMINAL), (x_j + 20, y_linha))
-            y_linha += 25
-
-        y_botoes = y_j + h_j - 50 - 30
-        x_btn_aprovar = x_j + (w_j // 2) - 150 - 20
-        x_btn_negar = x_j + (w_j // 2) + 20
-
-        self.desenhar_botao_os(tela, pygame.Rect(x_btn_aprovar, y_botoes, 150, 50), "APROVAR", (0, 150, 0))
-        self.desenhar_botao_os(tela, pygame.Rect(x_btn_negar, y_botoes, 150, 50), "NEGAR", (150, 0, 0))
+        linhas = ["SOC TERMINAL v4.1", "---", f"REQ: #{self.req_atual + 1001}", f"DE: {req['remetente']}",
+                  f"ALVO: {req['acesso']}", "---", "AGUARDANDO..."]
+        for idx, linha in enumerate(linhas):
+            tela.blit(self.fonte_terminal.render(linha, True, COR_TERMINAL),
+                      (x_j + 20, y_j + h_titulo + 20 + (idx * 25)))
+        self.desenhar_botao_os(tela, pygame.Rect(x_j + 130, y_j + 370, 150, 50), "APROVAR", (0, 150, 0))
+        self.desenhar_botao_os(tela, pygame.Rect(x_j + 320, y_j + 370, 150, 50), "NEGAR", (150, 0, 0))
 
     def desenhar_texto_com_quebra(self, tela, texto, fonte, x, y, largura_max):
         paragrafos = texto.split('\n')
@@ -446,15 +382,14 @@ class Desktop:
             palavras = paragrafo.split(' ')
             linha_atual = ""
             for palavra in palavras:
-                linha_teste = linha_atual + palavra + " "
-                if fonte.size(linha_teste)[0] <= largura_max:
-                    linha_atual = linha_teste
+                if fonte.size(linha_atual + palavra)[0] <= largura_max:
+                    linha_atual += palavra + " "
                 else:
                     tela.blit(fonte.render(linha_atual.strip(), True, COR_TEXTO), (x, y_atual))
-                    y_atual += fonte.size(linha_atual.strip())[1] + 2
+                    y_atual += fonte.size("A")[1] + 2
                     linha_atual = palavra + " "
             tela.blit(fonte.render(linha_atual.strip(), True, COR_TEXTO), (x, y_atual))
-            y_atual += fonte.size(linha_atual.strip())[1] + 10
+            y_atual += fonte.size("A")[1] + 10
 
 
 class MenuPrincipal:
@@ -500,6 +435,7 @@ class TelaBoot:
         self.fonte_log = pygame.font.SysFont("couriernew", 16)
         self.fonte_logo = pygame.font.SysFont("impact", 60)
         self.resetar()
+
         self.todas_as_linhas = [
             "DOORS BOOT SUBSYSTEM V4.11",
             "COPYRIGHT (C) 1995 DOORS CORPORATION",
@@ -578,3 +514,34 @@ class TelaBoot:
             return self.tempo_espera_final > 120
 
         return False
+
+
+class TelaShutdown:
+    def __init__(self, largura, altura):
+        self.largura = largura
+        self.altura = altura
+        self.fonte_msg = pygame.font.SysFont("tahoma", 28)
+        self.fonte_logo = pygame.font.SysFont("impact", 60, italic=True)
+        self.timer = 0
+
+    def resetar(self):
+        self.timer = 0
+
+    def desenhar(self, tela):
+        # 1. Fundo de Céu (Azul claro com gradiente simples)
+        for y in range(self.altura):
+            cor = (100 + (y // 10), 150 + (y // 15), 255)
+            pygame.draw.line(tela, cor, (0, y), (self.largura, y))
+
+        # 2. Mensagem Clássica
+        msg = "Aguarde enquanto seu computador é desligado."
+        sup_msg = self.fonte_msg.render(msg, True, (200, 50, 50))
+        tela.blit(sup_msg, (self.largura // 2 - sup_msg.get_width() // 2, self.altura // 2 - 50))
+
+        # 3. Logo "Doors 95"
+        logo_txt = self.fonte_logo.render("Doors 95", True, (255, 255, 255))
+        tela.blit(logo_txt, (self.largura // 2 - logo_txt.get_width() // 2, self.altura // 2 + 50))
+
+        # 4. Controle de Tempo
+        self.timer += 1
+        return self.timer > 180
