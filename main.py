@@ -1,6 +1,7 @@
 import pygame
 import sys
-from src.ui import Desktop, MenuPrincipal, TelaBoot, TelaShutdown
+from src.ui import Desktop, MenuPrincipal, TelaBoot, TelaShutdown, TelaGameOver
+from src.motor_jogo import MotorJogo
 
 pygame.init()
 
@@ -10,13 +11,18 @@ pygame.display.set_caption("Access, Please - Terminal SOC")
 
 relogio = pygame.time.Clock()
 
+# Instâncias Iniciais (Serão resetadas ao iniciar o turno)
 desktop_os = Desktop(LARGURA, ALTURA)
+motor = MotorJogo()
+
 menu_principal = MenuPrincipal(LARGURA, ALTURA)
 tela_boot = TelaBoot(LARGURA, ALTURA)
-tela_shutdown = TelaShutdown(LARGURA, ALTURA)  # Nossa nova tela clássica
+tela_shutdown = TelaShutdown(LARGURA, ALTURA)
+tela_gameover = TelaGameOver(LARGURA, ALTURA)  # Nova tela de punição!
 
 
 def main():
+    global desktop_os, motor  # Permite recriar essas variáveis ao reiniciar o turno
     rodando = True
     estado_jogo = "MENU"
 
@@ -31,28 +37,50 @@ def main():
                     if acao == "INICIAR TURNO":
                         estado_jogo = "BOOT"
                         tela_boot.resetar()
+                        # Reseta o progresso e o Desktop para um novo dia de trabalho
+                        motor = MotorJogo()
+                        desktop_os = Desktop(LARGURA, ALTURA)
                     elif acao == "SAIR":
                         rodando = False
 
             elif estado_jogo == "DESKTOP":
-                # LÓGICA QUE FALTAVA: Capturar o sinal de Desligar do ui.py
-                sinal = desktop_os.tratar_eventos(evento)
-                if sinal == "SHUTDOWN":
+                # O Desktop agora pode retornar dicionários com as decisões tomadas
+                retorno = desktop_os.tratar_eventos(evento)
+
+                if retorno == "SHUTDOWN":
                     estado_jogo = "SHUTDOWN"
                     tela_shutdown.resetar()
 
-        # DESENHO E TRANSIÇÕES DE ESTADO
+                # Checa se o retorno é um dicionário (Decisão de Aprovar/Negar)
+                elif isinstance(retorno, dict) and retorno.get("acao") == "DECISAO":
+                    # Manda o acesso e a decisão (True/False) para o Cérebro do jogo
+                    motor.processar_decisao(retorno["acesso"], retorno["decisao"])
+
+                    # Checa se o jogador foi demitido (tomou 3 strikes)
+                    if motor.verificar_game_over():
+                        estado_jogo = "GAME_OVER"
+                        tela_gameover.resetar()
+
+        # --- DESENHO E TRANSIÇÕES DE ESTADO ---
         if estado_jogo == "MENU":
             menu_principal.desenhar(TELA)
+
         elif estado_jogo == "BOOT":
             if tela_boot.desenhar(TELA):
                 estado_jogo = "DESKTOP"
+
         elif estado_jogo == "DESKTOP":
-            desktop_os.desenhar(TELA)
+            # Passamos o dinheiro e os strikes para o Desktop desenhar no painel
+            desktop_os.desenhar(TELA, motor.dinheiro, motor.strikes)
+
         elif estado_jogo == "SHUTDOWN":
-            # Quando os 3 segundos de shutdown acabarem, ele volta para o MENU
             if tela_shutdown.desenhar(TELA):
                 estado_jogo = "MENU"
+
+        elif estado_jogo == "GAME_OVER":
+            if tela_gameover.desenhar(TELA):
+                estado_jogo = "SHUTDOWN"  # Toma Game Over e força o desligamento da máquina!
+                tela_shutdown.resetar()
 
         pygame.display.flip()
         relogio.tick(60)

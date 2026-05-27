@@ -76,22 +76,41 @@ class Desktop:
 
         self.fila_requisicoes = [
             {"avatar": self.avatar_zoio, "remetente": "Everson Zoio", "cargo": "Estagiário",
-             "acesso": "WIFI_MICROONDAS", "corpo": "[ ESCREVA AQUI O PEDIDO DO ZOIO ]"},
+             "acesso": "WIFI_MICROONDAS",
+             "corpo": "E ae, rapaziada! Zoio na area! Solicito acesso à rede Wi-Fi restrita do SOC para conectar meu microondas. Quero tentar emular o Doors 95 nele. O bagulho é doido! Libera o IP ai, confia!"},
             {"avatar": self.avatar_abner, "remetente": "Abner Trovão", "cargo": "Analista de Dados",
-             "acesso": "PASTA_CONFIDENCIAL", "corpo": "[ ESCREVA AQUI O PEDIDO DO ABNER ]"},
+             "acesso": "PASTA_CONFIDENCIAL",
+             "corpo": "Bom dia, SOC. Solicito acesso à pasta confidencial 'lista_compras_semanal.txt'. Detectei um possível vazamento de dados sobre o preço do pão. Preciso analisar antes que os h@ckers comprem todo o lanche."},
             {"avatar": self.avatar_carlinhos, "remetente": "Carlinhos", "cargo": "Mestre de Cerimônias",
-             "acesso": "PROTOCOLO_FELINO", "corpo": "[ ESCREVA AQUI O PEDIDO DO CARLINHOS ]"},
+             "acesso": "PROTOCOLO_FELINO",
+             "corpo": "Solicito aprovação de acesso USB imediato. Meu gato deitou no teclado e o protocolo G.A.T.O.S bloqueou minhas portas. Preciso conectar meu pendrive para salvar as fotos dele para o Instagram."},
             {"avatar": self.avatar_gabe, "remetente": "Gabe Newell", "cargo": "CEO", "acesso": "ROOT_SERVER",
-             "corpo": "[ ESCREVA AQUI O PEDIDO DO GABE ]"},
+             "corpo": "Prezados. Solicito acesso ROOT ao servidor central. O arquivo 'halfdead3.sys' sumiu e preciso procurá-lo nas pastas de sistema. Sou o único com a chave do cofre, liberem meu acesso imediatamente."},
             {"avatar": self.avatar_indiano, "remetente": "Analista Indiano", "cargo": "Suporte Técnico",
-             "acesso": "FORMAT_C", "corpo": "[ ESCREVA AQUI O PEDIDO DO INDIANO ]"},
+             "acesso": "FORMAT_C",
+             "corpo": "Hello guys! Solicito permissão nível 5 para executar o comando 'FORMAT C: /Q /y' no servidor principal. É parte do meu novo tutorial grátis do além para resolver erros do SOC Kernel. Deixe o like!"},
             {"avatar": self.avatar_ney, "remetente": "Adulto Ney", "cargo": "Estagiário de Luxo",
-             "acesso": "PORTA_FESTA", "corpo": "[ ESCREVA AQUI O PEDIDO DO NEY ]"}
+             "acesso": "PORTA_FESTA",
+             "corpo": "SOC, seguinte. Solicito a liberação da Porta 8080 do firewall. Preciso enviar os convites da festa secreta do Doors 96. O traje é camisa do PSG. Libera aí que te coloco na lista VIP!"}
         ]
         self.req_atual = 0
 
-    def desenhar(self, tela):
+        # --- ATENÇÃO: Recebe os parâmetros de dinheiro e strikes! ---
+
+    def desenhar(self, tela, dinheiro=0, strikes=0):
         tela.fill(COR_FUNDO_DESKTOP)
+
+        # --- PAINEL DO SOC (HUD) ---
+        pygame.draw.rect(tela, (20, 20, 20), (self.largura - 170, 10, 160, 60))
+        pygame.draw.rect(tela, COR_BARRA_TAREFAS, (self.largura - 170, 10, 160, 60), 2)
+
+        texto_dinheiro = self.fonte_padrao.render(f"Saldo: ${dinheiro}", True, (50, 255, 50))
+        cor_strike = (255, 50, 50) if strikes > 0 else COR_BOTAO_BRIGHT
+        texto_strikes = self.fonte_padrao.render(f"Advertências: {strikes}/3", True, cor_strike)
+
+        tela.blit(texto_dinheiro, (self.largura - 160, 20))
+        tela.blit(texto_strikes, (self.largura - 160, 40))
+
         altura_barra = 40
         pygame.draw.rect(tela, COR_BARRA_TAREFAS, (0, self.altura - altura_barra, self.largura, altura_barra))
         pygame.draw.line(tela, COR_BOTAO_BRIGHT, (0, self.altura - altura_barra),
@@ -231,7 +250,6 @@ class Desktop:
         elif app_nome == "Terminal SOC":
             self.desenhar_conteudo_terminal(tela, x_janela, y_janela, largura_janela, altura_janela, altura_titulo)
         else:
-            # Qualquer outro aplicativo vai desenhar um aviso de "Em breve" genérico
             aviso = self.fonte_padrao.render("Aplicativo indisponível.", True, COR_TEXTO)
             tela.blit(aviso, (x_janela + 20, y_janela + altura_titulo + 20))
 
@@ -239,19 +257,15 @@ class Desktop:
         if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
             pos_mouse = evento.pos
 
-            # 1. Isolando o Menu Iniciar
             if self.menu_aberto:
                 rect_menu_inteiro = pygame.Rect(0, self.altura - 40 - 320, 220, 320)
-
                 if rect_menu_inteiro.collidepoint(pos_mouse):
                     for item_nome, item_rect in self.hitboxes_itens_menu:
                         if item_rect.collidepoint(pos_mouse):
                             self.menu_aberto = False
-                            # Se for o botão Desligar, dispara o evento real
                             if item_nome == "Desligar...":
                                 return "SHUTDOWN"
                             else:
-                                # Se for qualquer outro, abre uma janela genérica para dar o visual
                                 if item_nome not in self.janelas_abertas:
                                     self.janelas_abertas.append(item_nome)
                                     offset = len(self.janelas_abertas) * 30
@@ -265,7 +279,6 @@ class Desktop:
                     if not self.hitboxes.get("Botao Doors").collidepoint(pos_mouse):
                         self.menu_aberto = False
 
-            # 2. Verifica clique nas janelas
             for i in range(len(self.janelas_abertas) - 1, -1, -1):
                 app_nome = self.janelas_abertas[i]
                 x_j, y_j = self.janelas_pos[app_nome]
@@ -289,20 +302,25 @@ class Desktop:
                             self.req_atual = max(0, self.req_atual - 1)
                         elif pygame.Rect(x_j + 495, y_j + 409, 90, 26).collidepoint(pos_mouse):
                             self.req_atual = min(len(self.fila_requisicoes) - 1, self.req_atual + 1)
+
                     elif app_nome == "Terminal SOC" and len(self.fila_requisicoes) > 0:
-                        if pygame.Rect(x_j + 130, y_j + 370, 150, 50).collidepoint(pos_mouse) or pygame.Rect(x_j + 320,
-                                                                                                             y_j + 370,
-                                                                                                             150,
-                                                                                                             50).collidepoint(
-                                pos_mouse):
+                        # --- MODIFICAÇÃO CHAVE: Retorna a decisão para o main.py ---
+                        req = self.fila_requisicoes[self.req_atual]
+
+                        if pygame.Rect(x_j + 130, y_j + 370, 150, 50).collidepoint(pos_mouse):  # APROVAR
                             self.fila_requisicoes.pop(self.req_atual)
                             self.req_atual = max(0, min(self.req_atual, len(self.fila_requisicoes) - 1))
+                            return {"acao": "DECISAO", "acesso": req["acesso"], "decisao": True}
+
+                        elif pygame.Rect(x_j + 320, y_j + 370, 150, 50).collidepoint(pos_mouse):  # NEGAR
+                            self.fila_requisicoes.pop(self.req_atual)
+                            self.req_atual = max(0, min(self.req_atual, len(self.fila_requisicoes) - 1))
+                            return {"acao": "DECISAO", "acesso": req["acesso"], "decisao": False}
 
                 if rect_janela.collidepoint(pos_mouse):
                     self.janelas_abertas.append(self.janelas_abertas.pop(i))
                     return None
 
-            # 3. Área de Trabalho
             for nome_icone, hitbox in self.hitboxes.items():
                 if hitbox.collidepoint(pos_mouse):
                     if nome_icone == "Botao Doors":
@@ -528,20 +546,43 @@ class TelaShutdown:
         self.timer = 0
 
     def desenhar(self, tela):
-        # 1. Fundo de Céu (Azul claro com gradiente simples)
         for y in range(self.altura):
             cor = (100 + (y // 10), 150 + (y // 15), 255)
             pygame.draw.line(tela, cor, (0, y), (self.largura, y))
 
-        # 2. Mensagem Clássica
         msg = "Aguarde enquanto seu computador é desligado."
         sup_msg = self.fonte_msg.render(msg, True, (200, 50, 50))
         tela.blit(sup_msg, (self.largura // 2 - sup_msg.get_width() // 2, self.altura // 2 - 50))
 
-        # 3. Logo "Doors 95"
         logo_txt = self.fonte_logo.render("Doors 95", True, (255, 255, 255))
         tela.blit(logo_txt, (self.largura // 2 - logo_txt.get_width() // 2, self.altura // 2 + 50))
 
-        # 4. Controle de Tempo
         self.timer += 1
         return self.timer > 180
+
+    # --- NOVA CLASSE: TELA DE GAME OVER (Demitido!) ---
+
+
+class TelaGameOver:
+    def __init__(self, largura, altura):
+        self.largura = largura
+        self.altura = altura
+        self.fonte_titulo = pygame.font.SysFont("impact", 70)
+        self.fonte_sub = pygame.font.SysFont("tahoma", 24, bold=True)
+        self.timer = 0
+
+    def resetar(self):
+        self.timer = 0
+
+    def desenhar(self, tela):
+        tela.fill((150, 0, 0))  # Fundo vermelho fatal (Estilo Tela Azul da Morte, mas vermelha)
+
+        txt = self.fonte_titulo.render("SISTEMA BLOQUEADO", True, (255, 255, 255))
+        sub = self.fonte_sub.render("Múltiplas violações de segurança detectadas. Você foi demitido.", True,
+                                    (255, 255, 255))
+
+        tela.blit(txt, (self.largura // 2 - txt.get_width() // 2, self.altura // 2 - 60))
+        tela.blit(sub, (self.largura // 2 - sub.get_width() // 2, self.altura // 2 + 30))
+
+        self.timer += 1
+        return self.timer > 240  # Espera 4 segundos para desligar o PC
