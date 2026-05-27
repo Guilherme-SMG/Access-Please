@@ -74,6 +74,14 @@ class Desktop:
         self.avatar_indiano = carregar_avatar("Indiano.jpg")
         self.avatar_ney = carregar_avatar("ney.jpg")
 
+        # --- CARREGAMENTO DO SOM DE CLIQUE ---
+        pygame.mixer.init()
+        try:
+            self.som_click = pygame.mixer.Sound(os.path.join("assets", "sounds", "click.mp3"))
+            self.som_click.set_volume(0.3)  # Volume mais baixo para não irritar
+        except (FileNotFoundError, pygame.error):
+            self.som_click = None
+
         self.fila_requisicoes = [
             {"avatar": self.avatar_zoio, "remetente": "Everson Zoio", "cargo": "Estagiário",
              "acesso": "WIFI_MICROONDAS",
@@ -256,6 +264,8 @@ class Desktop:
     def tratar_eventos(self, evento):
         if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
             pos_mouse = evento.pos
+            if hasattr(self, 'som_click') and self.som_click:
+                self.som_click.play()
 
             if self.menu_aberto:
                 rect_menu_inteiro = pygame.Rect(0, self.altura - 40 - 320, 220, 320)
@@ -452,7 +462,18 @@ class TelaBoot:
         self.altura = altura
         self.fonte_log = pygame.font.SysFont("couriernew", 16)
         self.fonte_logo = pygame.font.SysFont("impact", 60)
-        self.resetar()
+
+        pygame.mixer.init()
+        caminho_som_boot = os.path.join("assets", "sounds", "boot.mp3")
+        try:
+            self.som_boot = pygame.mixer.Sound(caminho_som_boot)
+            self.som_boot.set_volume(0.5)
+        except (FileNotFoundError, pygame.error):
+            print("AVISO: Arquivo 'boot.mp3' não encontrado na pasta assets/sounds/")
+            self.som_boot = None
+
+        # PASSAMOS 'False' AQUI PARA NÃO TOCAR QUANDO O JOGO ABRE!
+        self.resetar(tocar_som=False)
 
         self.todas_as_linhas = [
             "DOORS BOOT SUBSYSTEM V4.11",
@@ -484,12 +505,17 @@ class TelaBoot:
             "READY."
         ]
 
-    def resetar(self):
+    # ADICIONAMOS O PARÂMETRO 'tocar_som=True' PARA QUANDO O BOTÃO FOR CLICADO
+    def resetar(self, tocar_som=True):
         self.linhas_exibidas = []
         self.indice_linha_atual = 0
         self.contador_frames = 0
         self.velocidade_carregamento = 6
         self.tempo_espera_final = 0
+
+        # SÓ TOCA SE A VARIÁVEL FOR VERDADEIRA
+        if tocar_som and hasattr(self, 'som_boot') and self.som_boot:
+            self.som_boot.play()
 
     def desenhar(self, tela):
         tela.fill((10, 10, 10))
