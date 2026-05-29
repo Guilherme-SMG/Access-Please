@@ -1,5 +1,6 @@
 from src.regras import verificar_decisao
 
+
 class MotorJogo:
     def __init__(self):
         self.dinheiro = 0
@@ -8,18 +9,23 @@ class MotorJogo:
         self.salario_por_acerto = 50
         self.multa_por_erro = 20
 
+        # --- NOVO: CONTROLE DE DIAS ---
+        self.dia_atual = 1
+        self.max_dias = 3
+
     def processar_decisao(self, acesso, decisao_jogador):
-        # Avalia se a decisão do jogador bate com o regras.py
         acertou = verificar_decisao(acesso, decisao_jogador)
 
         if acertou:
             self.dinheiro += self.salario_por_acerto
-            return True # Opcional: usaremos isso no futuro para tocar um som de "Caixa Registradora"
+            return True
         else:
             self.dinheiro -= self.multa_por_erro
             self.strikes += 1
-            return False # Opcional: usaremos isso no futuro para tocar um som de "Erro"
+            return False
 
     def verificar_game_over(self):
-        # Checa se o jogador atingiu o limite de advertências
         return self.strikes >= self.max_strikes
+
+    def avancar_dia(self):
+        self.dia_atual += 1
