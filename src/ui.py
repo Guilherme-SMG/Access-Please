@@ -12,9 +12,11 @@ COR_TERMINAL = (0, 230, 0)
 
 
 class Desktop:
-    def __init__(self, largura, altura):
+    # --- NOVO: Recebe o dia atual ao iniciar ---
+    def __init__(self, largura, altura, dia_atual=1):
         self.largura = largura
         self.altura = altura
+        self.dia_atual = dia_atual
         self.fonte_padrao = pygame.font.SysFont("tahoma", 13)
         self.fonte_terminal = pygame.font.SysFont("couriernew", 14, bold=True)
 
@@ -29,8 +31,7 @@ class Desktop:
             try:
                 img = pygame.image.load(caminho).convert_alpha()
                 w, h = img.get_size()
-                maior_lado = max(w, h)
-                fator = self.TAMANHO_MAX_ICONE / maior_lado
+                fator = self.TAMANHO_MAX_ICONE / max(w, h)
                 return pygame.transform.scale(img, (int(w * fator), int(h * fator)))
             except FileNotFoundError:
                 placeholder = pygame.Surface((self.TAMANHO_MAX_ICONE, self.TAMANHO_MAX_ICONE))
@@ -55,6 +56,13 @@ class Desktop:
         self.offset_x = 0
         self.offset_y = 0
 
+        pygame.mixer.init()
+        try:
+            self.som_click = pygame.mixer.Sound(os.path.join("assets", "sounds", "click.mp3"))
+            self.som_click.set_volume(0.3)
+        except (FileNotFoundError, pygame.error):
+            self.som_click = None
+
         TAMANHO_AVATAR = 80
 
         def carregar_avatar(nome_arquivo):
@@ -67,57 +75,63 @@ class Desktop:
                 placeholder.fill((255, 0, 255))
                 return placeholder
 
-        self.avatar_zoio = carregar_avatar("zoio.jpg")
-        self.avatar_abner = carregar_avatar("abner.jpg")
-        self.avatar_carlinhos = carregar_avatar("carlinhos.jpg")
-        self.avatar_gabe = carregar_avatar("Gabe.jpg")
-        self.avatar_indiano = carregar_avatar("Indiano.jpg")
-        self.avatar_ney = carregar_avatar("ney.jpg")
-
-        # --- CARREGAMENTO DO SOM DE CLIQUE ---
-        pygame.mixer.init()
-        try:
-            self.som_click = pygame.mixer.Sound(os.path.join("assets", "sounds", "click.mp3"))
-            self.som_click.set_volume(0.3)  # Volume mais baixo para não irritar
-        except (FileNotFoundError, pygame.error):
-            self.som_click = None
-
-        self.fila_requisicoes = [
-            {"avatar": self.avatar_zoio, "remetente": "Everson Zoio", "cargo": "Estagiário",
+        # --- SEPARAÇÃO DE REQUISIÇÕES POR DIA ---
+        reqs_dia_1 = [
+            {"avatar": carregar_avatar("zoio.jpg"), "remetente": "Everson Zoio", "cargo": "Estagiário",
              "acesso": "WIFI_MICROONDAS",
-             "corpo": "E ae, rapaziada! Zoio na area! Solicito acesso à rede Wi-Fi restrita do SOC para conectar meu microondas. Quero tentar emular o Doors 95 nele. O bagulho é doido! Libera o IP ai, confia!"},
-            {"avatar": self.avatar_abner, "remetente": "Abner Trovão", "cargo": "Analista de Dados",
+             "corpo": "E ae, rapaziada! Zoio na area! Solicito acesso à rede Wi-Fi restrita do SOC para conectar meu microondas. Quero tentar emular o Doors 95 nele. Libera o IP ai, confia!"},
+            {"avatar": carregar_avatar("abner.jpg"), "remetente": "Abner Trovão", "cargo": "Analista de Dados",
              "acesso": "PASTA_CONFIDENCIAL",
-             "corpo": "Bom dia, SOC. Solicito acesso à pasta confidencial 'lista_compras_semanal.txt'. Detectei um possível vazamento de dados sobre o preço do pão. Preciso analisar antes que os h@ckers comprem todo o lanche."},
-            {"avatar": self.avatar_carlinhos, "remetente": "Carlinhos", "cargo": "Mestre de Cerimônias",
+             "corpo": "Bom dia, SOC. Solicito acesso à pasta confidencial 'lista_compras_semanal.txt'. Detectei um possível vazamento de dados sobre o preço do pão. Preciso analisar."},
+            {"avatar": carregar_avatar("carlinhos.jpg"), "remetente": "Carlinhos", "cargo": "Mestre de Cerimônias",
              "acesso": "PROTOCOLO_FELINO",
-             "corpo": "Solicito aprovação de acesso USB imediato. Meu gato deitou no teclado e o protocolo G.A.T.O.S bloqueou minhas portas. Preciso conectar meu pendrive para salvar as fotos dele para o Instagram."},
-            {"avatar": self.avatar_gabe, "remetente": "Gabe Newell", "cargo": "CEO", "acesso": "ROOT_SERVER",
-             "corpo": "Prezados. Solicito acesso ROOT ao servidor central. O arquivo 'halfdead3.sys' sumiu e preciso procurá-lo nas pastas de sistema. Sou o único com a chave do cofre, liberem meu acesso imediatamente."},
-            {"avatar": self.avatar_indiano, "remetente": "Analista Indiano", "cargo": "Suporte Técnico",
-             "acesso": "FORMAT_C",
-             "corpo": "Hello guys! Solicito permissão nível 5 para executar o comando 'FORMAT C: /Q /y' no servidor principal. É parte do meu novo tutorial grátis do além para resolver erros do SOC Kernel. Deixe o like!"},
-            {"avatar": self.avatar_ney, "remetente": "Adulto Ney", "cargo": "Estagiário de Luxo",
-             "acesso": "PORTA_FESTA",
-             "corpo": "SOC, seguinte. Solicito a liberação da Porta 8080 do firewall. Preciso enviar os convites da festa secreta do Doors 96. O traje é camisa do PSG. Libera aí que te coloco na lista VIP!"}
+             "corpo": "Solicito aprovação de acesso USB imediato. Meu gato deitou no teclado e o protocolo G.A.T.O.S bloqueou minhas portas. Preciso conectar meu pendrive."}
         ]
-        self.req_atual = 0
 
-        # --- ATENÇÃO: Recebe os parâmetros de dinheiro e strikes! ---
+        reqs_dia_2 = [
+            {"avatar": carregar_avatar("Gabe.jpg"), "remetente": "Gabe Newell", "cargo": "CEO", "acesso": "ROOT_SERVER",
+             "corpo": "Prezados. Solicito acesso ROOT ao servidor central. O arquivo 'halfdead3.sys' sumiu e preciso procurá-lo nas pastas de sistema. Liberem meu acesso imediatamente."},
+            {"avatar": carregar_avatar("Indiano.jpg"), "remetente": "Analista Indiano", "cargo": "Suporte Técnico",
+             "acesso": "FORMAT_C",
+             "corpo": "Hello guys! Solicito permissão nível 5 para executar o comando 'FORMAT C: /Q /y' no servidor principal. É parte do meu novo tutorial grátis."},
+            {"avatar": carregar_avatar("ney.jpg"), "remetente": "Adulto Ney", "cargo": "Estagiário de Luxo",
+             "acesso": "PORTA_FESTA",
+             "corpo": "SOC, seguinte. Solicito a liberação da Porta 8080 do firewall. Preciso enviar os convites da festa secreta do Doors 96. Libera aí!"}
+        ]
+
+        reqs_dia_3 = [
+            {"avatar": carregar_avatar("char7.jpg"), "remetente": "Personagem 7", "cargo": "Cargo 7",
+             "acesso": "ACESSO_NOVO_1", "corpo": "[ ESCREVA AQUI O PEDIDO 7 ]"},
+            {"avatar": carregar_avatar("char8.jpg"), "remetente": "Personagem 8", "cargo": "Cargo 8",
+             "acesso": "ACESSO_NOVO_2", "corpo": "[ ESCREVA AQUI O PEDIDO 8 ]"},
+            {"avatar": carregar_avatar("char9.jpg"), "remetente": "Personagem 9", "cargo": "Cargo 9",
+             "acesso": "ACESSO_NOVO_3", "corpo": "[ ESCREVA AQUI O PEDIDO 9 ]"}
+        ]
+
+        if self.dia_atual == 1:
+            self.fila_requisicoes = reqs_dia_1
+        elif self.dia_atual == 2:
+            self.fila_requisicoes = reqs_dia_2
+        else:
+            self.fila_requisicoes = reqs_dia_3
+
+        self.req_atual = 0
 
     def desenhar(self, tela, dinheiro=0, strikes=0):
         tela.fill(COR_FUNDO_DESKTOP)
 
-        # --- PAINEL DO SOC (HUD) ---
-        pygame.draw.rect(tela, (20, 20, 20), (self.largura - 170, 10, 160, 60))
-        pygame.draw.rect(tela, COR_BARRA_TAREFAS, (self.largura - 170, 10, 160, 60), 2)
+        # HUD Topo (Dia, Saldo, Strikes)
+        pygame.draw.rect(tela, (20, 20, 20), (self.largura - 260, 10, 250, 60))
+        pygame.draw.rect(tela, COR_BARRA_TAREFAS, (self.largura - 260, 10, 250, 60), 2)
 
+        texto_dia = self.fonte_padrao.render(f"DIA ATUAL: {self.dia_atual}/3", True, (255, 200, 0))
         texto_dinheiro = self.fonte_padrao.render(f"Saldo: ${dinheiro}", True, (50, 255, 50))
         cor_strike = (255, 50, 50) if strikes > 0 else COR_BOTAO_BRIGHT
         texto_strikes = self.fonte_padrao.render(f"Advertências: {strikes}/3", True, cor_strike)
 
-        tela.blit(texto_dinheiro, (self.largura - 160, 20))
-        tela.blit(texto_strikes, (self.largura - 160, 40))
+        tela.blit(texto_dia, (self.largura - 250, 20))
+        tela.blit(texto_dinheiro, (self.largura - 150, 20))
+        tela.blit(texto_strikes, (self.largura - 150, 40))
 
         altura_barra = 40
         pygame.draw.rect(tela, COR_BARRA_TAREFAS, (0, self.altura - altura_barra, self.largura, altura_barra))
@@ -217,7 +231,6 @@ class Desktop:
         for item in self.itens_menu:
             rect_item = pygame.Rect(x_menu + 40, y_item - 5, largura_menu - 45, 35)
             self.hitboxes_itens_menu.append((item, rect_item))
-
             tela.blit(self.fonte_padrao.render(item, True, COR_TEXTO), (x_menu + 50, y_item))
             if item == "Ajuda":
                 y_linha = y_item + 30
@@ -258,14 +271,15 @@ class Desktop:
         elif app_nome == "Terminal SOC":
             self.desenhar_conteudo_terminal(tela, x_janela, y_janela, largura_janela, altura_janela, altura_titulo)
         else:
-            aviso = self.fonte_padrao.render("Aplicativo indisponível.", True, COR_TEXTO)
+            aviso = self.fonte_padrao.render("Aplicativo em desenvolvimento...", True, COR_TEXTO)
             tela.blit(aviso, (x_janela + 20, y_janela + altura_titulo + 20))
 
     def tratar_eventos(self, evento):
         if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
-            pos_mouse = evento.pos
             if hasattr(self, 'som_click') and self.som_click:
                 self.som_click.play()
+
+            pos_mouse = evento.pos
 
             if self.menu_aberto:
                 rect_menu_inteiro = pygame.Rect(0, self.altura - 40 - 320, 220, 320)
@@ -307,25 +321,27 @@ class Desktop:
                     return None
 
                 if i == len(self.janelas_abertas) - 1:
-                    if app_nome == "OutVision":
+                    if app_nome == "OutVision" and len(self.fila_requisicoes) > 0:
                         if pygame.Rect(x_j + 405, y_j + 409, 90, 26).collidepoint(pos_mouse):
                             self.req_atual = max(0, self.req_atual - 1)
                         elif pygame.Rect(x_j + 495, y_j + 409, 90, 26).collidepoint(pos_mouse):
                             self.req_atual = min(len(self.fila_requisicoes) - 1, self.req_atual + 1)
 
-                    elif app_nome == "Terminal SOC" and len(self.fila_requisicoes) > 0:
-                        # --- MODIFICAÇÃO CHAVE: Retorna a decisão para o main.py ---
-                        req = self.fila_requisicoes[self.req_atual]
-
-                        if pygame.Rect(x_j + 130, y_j + 370, 150, 50).collidepoint(pos_mouse):  # APROVAR
-                            self.fila_requisicoes.pop(self.req_atual)
-                            self.req_atual = max(0, min(self.req_atual, len(self.fila_requisicoes) - 1))
-                            return {"acao": "DECISAO", "acesso": req["acesso"], "decisao": True}
-
-                        elif pygame.Rect(x_j + 320, y_j + 370, 150, 50).collidepoint(pos_mouse):  # NEGAR
-                            self.fila_requisicoes.pop(self.req_atual)
-                            self.req_atual = max(0, min(self.req_atual, len(self.fila_requisicoes) - 1))
-                            return {"acao": "DECISAO", "acesso": req["acesso"], "decisao": False}
+                    elif app_nome == "Terminal SOC":
+                        if len(self.fila_requisicoes) > 0:
+                            req = self.fila_requisicoes[self.req_atual]
+                            if pygame.Rect(x_j + 130, y_j + 370, 150, 50).collidepoint(pos_mouse):
+                                self.fila_requisicoes.pop(self.req_atual)
+                                self.req_atual = max(0, min(self.req_atual, len(self.fila_requisicoes) - 1))
+                                return {"acao": "DECISAO", "acesso": req["acesso"], "decisao": True}
+                            elif pygame.Rect(x_j + 320, y_j + 370, 150, 50).collidepoint(pos_mouse):
+                                self.fila_requisicoes.pop(self.req_atual)
+                                self.req_atual = max(0, min(self.req_atual, len(self.fila_requisicoes) - 1))
+                                return {"acao": "DECISAO", "acesso": req["acesso"], "decisao": False}
+                        else:
+                            # --- NOVO: Botão de Encerrar Expediente ---
+                            if pygame.Rect(x_j + 225, y_j + 370, 150, 50).collidepoint(pos_mouse):
+                                return {"acao": "ENCERRAR_DIA"}
 
                 if rect_janela.collidepoint(pos_mouse):
                     self.janelas_abertas.append(self.janelas_abertas.pop(i))
@@ -390,10 +406,14 @@ class Desktop:
 
     def desenhar_conteudo_terminal(self, tela, x_j, y_j, w_j, h_j, h_titulo):
         pygame.draw.rect(tela, (15, 15, 15), (x_j + 5, y_j + h_titulo + 5, w_j - 10, h_j - h_titulo - 10))
+
+        # --- NOVO: MOSTRA BOTAO ENCERRAR QUANDO ZERAR A FILA ---
         if len(self.fila_requisicoes) == 0:
-            tela.blit(self.fonte_terminal.render("SISTEMA OCIOSO.", True, COR_TERMINAL),
+            tela.blit(self.fonte_terminal.render("SISTEMA OCIOSO. EXPEDIENTE CONCLUÍDO.", True, COR_TERMINAL),
                       (x_j + 20, y_j + h_titulo + 20))
+            self.desenhar_botao_os(tela, pygame.Rect(x_j + 225, y_j + 370, 150, 50), "ENCERRAR DIA", COR_BARRA_TAREFAS)
             return
+
         req = self.fila_requisicoes[self.req_atual]
         linhas = ["SOC TERMINAL v4.1", "---", f"REQ: #{self.req_atual + 1001}", f"DE: {req['remetente']}",
                   f"ALVO: {req['acesso']}", "---", "AGUARDANDO..."]
@@ -469,10 +489,8 @@ class TelaBoot:
             self.som_boot = pygame.mixer.Sound(caminho_som_boot)
             self.som_boot.set_volume(0.5)
         except (FileNotFoundError, pygame.error):
-            print("AVISO: Arquivo 'boot.mp3' não encontrado na pasta assets/sounds/")
             self.som_boot = None
 
-        # PASSAMOS 'False' AQUI PARA NÃO TOCAR QUANDO O JOGO ABRE!
         self.resetar(tocar_som=False)
 
         self.todas_as_linhas = [
@@ -505,15 +523,12 @@ class TelaBoot:
             "READY."
         ]
 
-    # ADICIONAMOS O PARÂMETRO 'tocar_som=True' PARA QUANDO O BOTÃO FOR CLICADO
     def resetar(self, tocar_som=True):
         self.linhas_exibidas = []
         self.indice_linha_atual = 0
         self.contador_frames = 0
         self.velocidade_carregamento = 6
         self.tempo_espera_final = 0
-
-        # SÓ TOCA SE A VARIÁVEL FOR VERDADEIRA
         if tocar_som and hasattr(self, 'som_boot') and self.som_boot:
             self.som_boot.play()
 
@@ -586,8 +601,6 @@ class TelaShutdown:
         self.timer += 1
         return self.timer > 180
 
-    # --- NOVA CLASSE: TELA DE GAME OVER (Demitido!) ---
-
 
 class TelaGameOver:
     def __init__(self, largura, altura):
@@ -601,7 +614,7 @@ class TelaGameOver:
         self.timer = 0
 
     def desenhar(self, tela):
-        tela.fill((150, 0, 0))  # Fundo vermelho fatal (Estilo Tela Azul da Morte, mas vermelha)
+        tela.fill((150, 0, 0))
 
         txt = self.fonte_titulo.render("SISTEMA BLOQUEADO", True, (255, 255, 255))
         sub = self.fonte_sub.render("Múltiplas violações de segurança detectadas. Você foi demitido.", True,
@@ -611,4 +624,73 @@ class TelaGameOver:
         tela.blit(sub, (self.largura // 2 - sub.get_width() // 2, self.altura // 2 + 30))
 
         self.timer += 1
-        return self.timer > 240  # Espera 4 segundos para desligar o PC
+        return self.timer > 240
+
+    # --- NOVA CLASSE: TELA DE FIM DE EXPEDIENTE ---
+
+
+class TelaFimExpediente:
+    def __init__(self, largura, altura):
+        self.largura, self.altura = largura, altura
+        self.fonte_titulo = pygame.font.SysFont("impact", 60)
+        self.fonte_dados = pygame.font.SysFont("tahoma", 24, bold=True)
+        self.fonte_botao = pygame.font.SysFont("impact", 30)
+        self.hitbox_botao = None
+
+    def desenhar(self, tela, dia, dinheiro, strikes):
+        tela.fill((20, 25, 30))
+
+        txt = self.fonte_titulo.render(f"FIM DO DIA {dia}", True, (200, 200, 200))
+        tela.blit(txt, (self.largura // 2 - txt.get_width() // 2, 150))
+
+        str_saldo = self.fonte_dados.render(f"SALDO ACUMULADO: ${dinheiro}", True, (50, 255, 50))
+        str_strikes = self.fonte_dados.render(f"ADVERTÊNCIAS: {strikes}/3", True, (255, 100, 100))
+
+        tela.blit(str_saldo, (self.largura // 2 - str_saldo.get_width() // 2, 280))
+        tela.blit(str_strikes, (self.largura // 2 - str_strikes.get_width() // 2, 330))
+
+        # Botão Próximo Dia
+        sup_btn = self.fonte_botao.render("INICIAR PRÓXIMO TURNO", True, (255, 255, 255))
+        rect_btn = sup_btn.get_rect(center=(self.largura // 2, 500))
+        self.hitbox_botao = rect_btn.inflate(40, 20)
+        pygame.draw.rect(tela, (50, 100, 50), self.hitbox_botao)
+        pygame.draw.rect(tela, (100, 200, 100), self.hitbox_botao, 3)
+        tela.blit(sup_btn, rect_btn)
+
+    def tratar_clique(self, pos_mouse):
+        if self.hitbox_botao and self.hitbox_botao.collidepoint(pos_mouse):
+            return "PROXIMO_DIA"
+        return None
+
+
+# --- NOVA CLASSE: TELA DE VITÓRIA ---
+class TelaVitoria:
+    def __init__(self, largura, altura):
+        self.largura, self.altura = largura, altura
+        self.fonte_titulo = pygame.font.SysFont("impact", 70)
+        self.fonte_dados = pygame.font.SysFont("tahoma", 24, bold=True)
+        self.fonte_botao = pygame.font.SysFont("impact", 30)
+        self.hitbox_botao = None
+
+    def desenhar(self, tela, dinheiro):
+        tela.fill((20, 40, 20))  # Fundo verde escuro vitorioso
+
+        txt = self.fonte_titulo.render("CAMPANHA CONCLUÍDA!", True, (100, 255, 100))
+        sub = self.fonte_dados.render("Parabéns, Analista! Você sobreviveu aos 3 dias no SOC.", True, (200, 255, 200))
+        saldo = self.fonte_dados.render(f"Pagamento Final: ${dinheiro}", True, (50, 255, 50))
+
+        tela.blit(txt, (self.largura // 2 - txt.get_width() // 2, 150))
+        tela.blit(sub, (self.largura // 2 - sub.get_width() // 2, 250))
+        tela.blit(saldo, (self.largura // 2 - saldo.get_width() // 2, 300))
+
+        sup_btn = self.fonte_botao.render("VOLTAR AO MENU", True, (255, 255, 255))
+        rect_btn = sup_btn.get_rect(center=(self.largura // 2, 500))
+        self.hitbox_botao = rect_btn.inflate(40, 20)
+        pygame.draw.rect(tela, (40, 40, 40), self.hitbox_botao)
+        pygame.draw.rect(tela, (150, 150, 150), self.hitbox_botao, 3)
+        tela.blit(sup_btn, rect_btn)
+
+    def tratar_clique(self, pos_mouse):
+        if self.hitbox_botao and self.hitbox_botao.collidepoint(pos_mouse):
+            return "MENU"
+        return None
