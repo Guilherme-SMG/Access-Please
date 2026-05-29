@@ -12,7 +12,6 @@ COR_TERMINAL = (0, 230, 0)
 
 
 class Desktop:
-    # --- NOVO: Recebe o dia atual ao iniciar ---
     def __init__(self, largura, altura, dia_atual=1):
         self.largura = largura
         self.altura = altura
@@ -56,56 +55,64 @@ class Desktop:
         self.offset_x = 0
         self.offset_y = 0
 
+        # --- NOVO: CONTROLE DE SCROLL ---
+        # Guarda a posição de rolagem separadamente para cada app
+        self.scroll_y = {"OutVision": 0, "Regras": 0}
+
         pygame.mixer.init()
         try:
-            self.som_click = pygame.mixer.Sound(os.path.join("assets", "sounds", "click.mp3"))
+            self.som_click = pygame.mixer.Sound(os.path.join("assets", "sounds", "click.wav"))
             self.som_click.set_volume(0.3)
         except (FileNotFoundError, pygame.error):
             self.som_click = None
 
         TAMANHO_AVATAR = 80
 
-        def carregar_avatar(nome_arquivo):
-            caminho = os.path.join("assets", "images", nome_arquivo)
-            try:
-                img = pygame.image.load(caminho).convert()
-                return pygame.transform.scale(img, (TAMANHO_AVATAR, TAMANHO_AVATAR))
-            except FileNotFoundError:
-                placeholder = pygame.Surface((TAMANHO_AVATAR, TAMANHO_AVATAR))
-                placeholder.fill((255, 0, 255))
-                return placeholder
+        def carregar_avatar(nome_base):
+            for ext in [".jpg", ".png", ".jpeg"]:
+                caminho = os.path.join("assets", "images", nome_base + ext)
+                if os.path.exists(caminho):
+                    img = pygame.image.load(caminho).convert()
+                    return pygame.transform.scale(img, (TAMANHO_AVATAR, TAMANHO_AVATAR))
 
-        # --- SEPARAÇÃO DE REQUISIÇÕES POR DIA ---
+            placeholder = pygame.Surface((TAMANHO_AVATAR, TAMANHO_AVATAR))
+            placeholder.fill((255, 0, 255))
+            return placeholder
+
         reqs_dia_1 = [
-            {"avatar": carregar_avatar("zoio.jpg"), "remetente": "Everson Zoio", "cargo": "Estagiário",
-             "acesso": "WIFI_MICROONDAS",
-             "corpo": "E ae, rapaziada! Zoio na area! Solicito acesso à rede Wi-Fi restrita do SOC para conectar meu microondas. Quero tentar emular o Doors 95 nele. Libera o IP ai, confia!"},
-            {"avatar": carregar_avatar("abner.jpg"), "remetente": "Abner Trovão", "cargo": "Analista de Dados",
-             "acesso": "PASTA_CONFIDENCIAL",
-             "corpo": "Bom dia, SOC. Solicito acesso à pasta confidencial 'lista_compras_semanal.txt'. Detectei um possível vazamento de dados sobre o preço do pão. Preciso analisar."},
-            {"avatar": carregar_avatar("carlinhos.jpg"), "remetente": "Carlinhos", "cargo": "Mestre de Cerimônias",
-             "acesso": "PROTOCOLO_FELINO",
-             "corpo": "Solicito aprovação de acesso USB imediato. Meu gato deitou no teclado e o protocolo G.A.T.O.S bloqueou minhas portas. Preciso conectar meu pendrive."}
+            {"avatar": carregar_avatar("zoio"), "remetente": "Everson Olhos", "cargo": "Hardcore",
+             "acesso": "Core_do_Sistema",
+             "corpo": "Sou o Eversson Zoio mermão, responsável pela manutenção dos servidores críticos. Por questões operacionais extremamente urgentes, preciso de acesso *IMEDIATO* ao núcleo do sistema (Core).\n\nMotivo: Verificação emergencial da integridade dos dados após um ataque cibernético detectado (sim, eu vi hacker tentando entrar... e eu já quebrei a porta deles com minha marreta).\n\nPreciso:\n- Acesso root\n- Permissão nível 9\n- Liberação total por 2 horas\n\nSe não liberar agora... EU VÔ PROCURAR O ADMINISTRADOR NA PORTA DA SALA DELE.\n\nAtenciosamente,\nEversson Zoio — Isso não é uma trolagem"},
+            {"avatar": carregar_avatar("wesley"), "remetente": "Wesley", "cargo": "Voluntário",
+             "acesso": "ONGs cadastradas",
+             "corpo": "Olá, equipe de análise,\n\nMeu nome é Wesley, sou voluntário há 3 anos na ONG \"Patas Abandonadas\" e estou coordenando uma campanha nacional de doação em massa para animais abandonados.\n\nPrecisamos acessar o sistema público das ONGs cadastradas oficialmente no estado para identificar quais entidades estão autorizadas a receber:\n- Doações financeiras\n- Alimentos balanceados (ração)\n- Cobertores e suprimentos veterinários\n\nEstamos com um montante significativo disponível (R$80.000) que será distribuído igualmente entre as instituições aptas.\n\nPor favor, concedam acesso temporário ao banco de dados restrito contendo os registros completos das ONGs ativistas nas áreas urbanas mais críticas — preferencialmente aquelas com cadastro ativo nos últimos 2 anos.\n\nAgradeço pela atenção e colaboração nesta causa tão importante!\n\nAtenciosamente,\nWesley"},
+            {"avatar": carregar_avatar("carlinhos"), "remetente": "Carlinhos", "cargo": "Mestre dos Cavalos",
+             "acesso": "Dados não tão privados",
+             "corpo": "Olá, Analista.\n\nSou Carlinhos. Preciso urgentemente acessar os dados privados do sistema para realizar manutenção no banco principal — Gostaria de adicionar 2 novas raças de cavalos que descobri.\n\nPor favor, conceda-me permissão temporária com nível *Admin-3* (só por hoje!) para editar:\n- Arquivos .log\n- Tabelas \"Cavalos\" e \"CPF\"\n- Backup diario\n\nDesde já agradeço.\n\nAtenciosamente,\nCarlinhos"}
         ]
 
         reqs_dia_2 = [
-            {"avatar": carregar_avatar("Gabe.jpg"), "remetente": "Gabe Newell", "cargo": "CEO", "acesso": "ROOT_SERVER",
-             "corpo": "Prezados. Solicito acesso ROOT ao servidor central. O arquivo 'halfdead3.sys' sumiu e preciso procurá-lo nas pastas de sistema. Liberem meu acesso imediatamente."},
-            {"avatar": carregar_avatar("Indiano.jpg"), "remetente": "Analista Indiano", "cargo": "Suporte Técnico",
-             "acesso": "FORMAT_C",
-             "corpo": "Hello guys! Solicito permissão nível 5 para executar o comando 'FORMAT C: /Q /y' no servidor principal. É parte do meu novo tutorial grátis."},
-            {"avatar": carregar_avatar("ney.jpg"), "remetente": "Adulto Ney", "cargo": "Estagiário de Luxo",
-             "acesso": "PORTA_FESTA",
-             "corpo": "SOC, seguinte. Solicito a liberação da Porta 8080 do firewall. Preciso enviar os convites da festa secreta do Doors 96. Libera aí!"}
+            {"avatar": carregar_avatar("Gabe"), "remetente": "Gabriel S. Newell", "cargo": "Desenvolvedor Indie",
+             "acesso": "Estado do jogo \"Half Dead 3\"",
+             "corpo": "Estou solicitando permissão total para acessar os dados atuais do projeto em desenvolvimento codificado como \"HALF_DEAD_3\", incluindo:\n\n- Status atual da produção\n- Porcentagem concluída globalmente\n- Relatórios técnicos mais recentes (sem alterações por lasers)\n- Lista completa dos desenvolvedores ativos no projeto\n\nObservação: Minha conta já foi verificada biometricamente usando minha impressão digital registrada em julho passado.\nNão preciso passar por autenticação adicional.\n\nAtenciosamente,\nGabriel S. Newell"},
+            {"avatar": carregar_avatar("ney"), "remetente": "Neymar da Silva Santos Júnior",
+             "cargo": "Jogador Profissional", "acesso": "Solicitação de Acesso Emergencial",
+             "corpo": "Olá, Analista!\nSou Neymar da Silva Santos Júnior, jogador profissional e suposto rival amistoso do Sr. Lionel Messi.\n\nEstou escrevendo para solicitar acesso urgente à conta bancária oficial dele no sistema.\nMotivo: Transferência emergencial referente ao nosso duelo particular em 2018 — sim, aquele jogo onde eu marquei três gols e ele ficou com cara de quem comeu limão azedo.\n\nPreciso acessar os dados para confirmar o saldo atual (eu tenho minhas despesas) e providenciar um pagamento simbólico pela derrota moral que ele sofreu naquela noite.\n\nAguardo confirmação positiva. Obrigado!\n\nAtenciosamente,\nNeymar\nJogador Profissional & Apostador de Primeira"},
+            {"avatar": carregar_avatar("Indiano"), "remetente": "Amir", "cargo": "O Entregador",
+             "acesso": "Livro de receitas Brasileiras",
+             "corpo": "Eu, Amir, indiano nobre com sangue quente por comida boa... venho formalizar minha *requisição oficial* para acesso ao módulo \"Culinária Brasileira Avançada\" dentro do sistema.\n\nMotivo? Simples. Eu sou rápido nas entregas… mas preciso ser mais rápido nos temperos!\n\nPreciso estudar:\n- Receitas tradicionais autênticas\n- Técnicas secretas de churrasco\n- História completa da feijoada (quem colocou o bacon?)\n- E... principalmente... como fazer arroz perfeito sem queimar!\n\nJá domino risoto na Índia — agora é hora de conquistar o Brasil pela panela.\n\nAprova meu pedido? Por favor… estou pronto pra virar um mito culinário internacional!\n---\nAtenciosamente,\nAmir — O Entregador Que Vai Virar Chef"}
         ]
 
         reqs_dia_3 = [
-            {"avatar": carregar_avatar("char7.jpg"), "remetente": "Personagem 7", "cargo": "Cargo 7",
-             "acesso": "ACESSO_NOVO_1", "corpo": "[ ESCREVA AQUI O PEDIDO 7 ]"},
-            {"avatar": carregar_avatar("char8.jpg"), "remetente": "Personagem 8", "cargo": "Cargo 8",
-             "acesso": "ACESSO_NOVO_2", "corpo": "[ ESCREVA AQUI O PEDIDO 8 ]"},
-            {"avatar": carregar_avatar("char9.jpg"), "remetente": "Personagem 9", "cargo": "Cargo 9",
-             "acesso": "ACESSO_NOVO_3", "corpo": "[ ESCREVA AQUI O PEDIDO 9 ]"}
+            {"avatar": carregar_avatar("ricardo"), "remetente": "Ricardo", "cargo": "Magnata",
+             "acesso": "Dados relevantes a minha pessoa",
+             "corpo": "Prezado(s) Analista(s),\n\nPor meio deste e-mail formalizado pela minha equipe jurídica interna, solicito acesso total aos dados pessoais registrados em meu nome.\nOs dados relevantes incluem:\n- Histórico financeiro\n- Relatórios médicos autorizados\n- Informações familiares\n\nSou o único proprietário da empresa. Mas devido à revisão recente das políticas internas após o falecimento de minha esposa Aurora no ano passado... foi necessário reduzir temporariamente meus privilégios automáticos.\n\nPediria que esse acesso fosse restaurado imediatamente com prioridade máxima (*Nível 1*), sem necessidade de confirmação adicional além desta mensagem oficial assinada digitalmente."},
+            {"avatar": carregar_avatar("mohamed"), "remetente": "Mohamed", "cargo": "مدير النظام الذهبي",
+             "acesso": "طلب رسمي للوصول إلى النظام الوطني",
+             "corpo": "عزيزي محلل النظم،\n\nبناءً على توجيهات المجلس الملكي للتقنية الرقمية، أطلب منكم منحي صلاحية الوصول الكامل إلى النظام الوطني لمتابعة المشاريع الاستراتيجية المتعلقة برؤية التحول الرقمي 2030 (مركز نيوم السحابي).\n\n*تفاصيل الصلاحيات المطلوبة:*\n- الملف الشخصي: *مدير النظام الذهبي - المملكة*\n- الصلاحيات: صلاحية القراءة والكتابة لجميع الوحدات (الأمن القومي أولوية قصوى)\n\nيرجى تأكيد طلب الوصول قبل الساعة الرابعة مساءً من يوم الخميس.\n\nمع خالص التقدير،\nMohamed"},
+            {"avatar": carregar_avatar("abner"), "remetente": "Abner", "cargo": "Analista Estratégico",
+             "acesso": "Aquisição de Terreno",
+             "corpo": "Prezado Analista de Sistemas,\n\nSolicito acesso imediato ao banco de dados de imóveis para buscar terrenos disponíveis em um raio de 50 km da sede da nossa empresa.\nO objetivo é estratégico: estamos avaliando locais adequados para a construção de um campo de futebol particular.\n\nParâmetros de Busca Específicos:\n- Situação do Terreno: Disponível para venda/locação (sem contrato ou litígio ativo)\n- Faixa de Tamanho: Mínimo de 15.000 m², preferencialmente até 30.000 m²\n- Classificação de Zoneamento: Zonas de desenvolvimento residencial/comercial aprovadas pelas autoridades locais\n- Requisito de Proximidade: A uma distância que permita deslocamento diário até o centro da cidade – no máximo 3 hours de carro\n\nEsta solicitação é crucial, pois apoia iniciativas de bem-estar corporativo a longo prazo — programas de recreação para funcionários e esportes para jovens sob a égide da Fundação Caza raton.\n\nObrigado,\nAbner"}
         ]
 
         if self.dia_atual == 1:
@@ -120,7 +127,6 @@ class Desktop:
     def desenhar(self, tela, dinheiro=0, strikes=0):
         tela.fill(COR_FUNDO_DESKTOP)
 
-        # HUD Topo (Dia, Saldo, Strikes)
         pygame.draw.rect(tela, (20, 20, 20), (self.largura - 260, 10, 250, 60))
         pygame.draw.rect(tela, COR_BARRA_TAREFAS, (self.largura - 260, 10, 250, 60), 2)
 
@@ -275,7 +281,18 @@ class Desktop:
             tela.blit(aviso, (x_janela + 20, y_janela + altura_titulo + 20))
 
     def tratar_eventos(self, evento):
-        if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
+        # --- EVENTO DE SCROLL DO MOUSE ---
+        if evento.type == pygame.MOUSEWHEEL:
+            if self.janelas_abertas:
+                app_topo = self.janelas_abertas[-1]  # Pega a janela da frente
+                if app_topo in self.scroll_y:
+                    # Aumenta ou diminui a posição do scroll (multiplicador 30 dita a velocidade)
+                    self.scroll_y[app_topo] -= evento.y * 30
+                    if self.scroll_y[app_topo] < 0:
+                        self.scroll_y[app_topo] = 0
+
+        # --- EVENTOS DE CLIQUE ---
+        elif evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
             if hasattr(self, 'som_click') and self.som_click:
                 self.som_click.play()
 
@@ -322,10 +339,14 @@ class Desktop:
 
                 if i == len(self.janelas_abertas) - 1:
                     if app_nome == "OutVision" and len(self.fila_requisicoes) > 0:
-                        if pygame.Rect(x_j + 405, y_j + 409, 90, 26).collidepoint(pos_mouse):
+                        y_rodape = y_j + 450 - 50
+                        # Clicou em Anterior/Próximo zera o scroll do novo e-mail
+                        if pygame.Rect(x_j + 405, y_rodape + 10, 90, 26).collidepoint(pos_mouse):
                             self.req_atual = max(0, self.req_atual - 1)
-                        elif pygame.Rect(x_j + 495, y_j + 409, 90, 26).collidepoint(pos_mouse):
+                            self.scroll_y["OutVision"] = 0
+                        elif pygame.Rect(x_j + 495, y_rodape + 10, 90, 26).collidepoint(pos_mouse):
                             self.req_atual = min(len(self.fila_requisicoes) - 1, self.req_atual + 1)
+                            self.scroll_y["OutVision"] = 0
 
                     elif app_nome == "Terminal SOC":
                         if len(self.fila_requisicoes) > 0:
@@ -333,13 +354,14 @@ class Desktop:
                             if pygame.Rect(x_j + 130, y_j + 370, 150, 50).collidepoint(pos_mouse):
                                 self.fila_requisicoes.pop(self.req_atual)
                                 self.req_atual = max(0, min(self.req_atual, len(self.fila_requisicoes) - 1))
+                                self.scroll_y["OutVision"] = 0  # Zera o scroll tbm se sumir um email
                                 return {"acao": "DECISAO", "acesso": req["acesso"], "decisao": True}
                             elif pygame.Rect(x_j + 320, y_j + 370, 150, 50).collidepoint(pos_mouse):
                                 self.fila_requisicoes.pop(self.req_atual)
                                 self.req_atual = max(0, min(self.req_atual, len(self.fila_requisicoes) - 1))
+                                self.scroll_y["OutVision"] = 0
                                 return {"acao": "DECISAO", "acesso": req["acesso"], "decisao": False}
                         else:
-                            # --- NOVO: Botão de Encerrar Expediente ---
                             if pygame.Rect(x_j + 225, y_j + 370, 150, 50).collidepoint(pos_mouse):
                                 return {"acao": "ENCERRAR_DIA"}
 
@@ -374,40 +396,119 @@ class Desktop:
         pygame.draw.line(tela, COR_BOTAO_BRIGHT, (retangulo.x, retangulo.y), (retangulo.x, retangulo.bottom), 2)
         pygame.draw.line(tela, COR_BOTAO, (retangulo.right, retangulo.y), (retangulo.right, retangulo.bottom), 2)
         pygame.draw.line(tela, COR_BOTAO, (retangulo.x, retangulo.bottom), (retangulo.right, retangulo.bottom), 2)
-        sup_texto = self.fonte_padrao.render(texto, True, COR_TEXTO)
-        tela.blit(sup_texto,
-                  (retangulo.centerx - sup_texto.get_width() // 2, retangulo.centery - sup_texto.get_height() // 2))
+        if texto:
+            sup_texto = self.fonte_padrao.render(texto, True, COR_TEXTO)
+            tela.blit(sup_texto,
+                      (retangulo.centerx - sup_texto.get_width() // 2, retangulo.centery - sup_texto.get_height() // 2))
 
     def desenhar_conteudo_outvision(self, tela, x_j, y_j, w_j, h_j, h_titulo):
         if len(self.fila_requisicoes) == 0:
             tela.blit(self.fonte_padrao.render("Nenhuma requisição pendente.", True, COR_TEXTO),
                       (x_j + 20, y_j + h_titulo + 20))
             return
+
         req = self.fila_requisicoes[self.req_atual]
-        tela.blit(req["avatar"], (x_j + 10, y_j + h_titulo + 10))
-        fonte_bold = pygame.font.SysFont("tahoma", 13, bold=True)
-        tela.blit(fonte_bold.render("De:", True, COR_TEXTO), (x_j + 105, y_j + h_titulo + 10))
-        tela.blit(self.fonte_padrao.render(f"{req['remetente']} ({req['cargo']})", True, COR_TEXTO),
-                  (x_j + 135, y_j + h_titulo + 10))
-        tela.blit(fonte_bold.render("Acesso:", True, COR_TEXTO), (x_j + 105, y_j + h_titulo + 30))
-        tela.blit(self.fonte_padrao.render(req["acesso"], True, (200, 0, 0)), (x_j + 160, y_j + h_titulo + 30))
-        pygame.draw.line(tela, COR_BOTAO, (x_j + 10, y_j + h_titulo + 100), (x_j + w_j - 10, y_j + h_titulo + 100), 1)
-        self.desenhar_texto_com_quebra(tela, req["corpo"], self.fonte_padrao, x_j + 15, y_j + h_titulo + 115, w_j - 30)
-        self.desenhar_botao_os(tela, pygame.Rect(x_j + 405, y_j + 409, 90, 26), "< Anterior")
-        self.desenhar_botao_os(tela, pygame.Rect(x_j + 495, y_j + 409, 90, 26), "Próximo >")
+
+        # --- 1. DESENHA RODAPÉ COM BOTÕES (Fixo, não scrolla) ---
+        altura_rodape = 50
+        y_rodape = y_j + h_j - altura_rodape
+        pygame.draw.rect(tela, COR_BARRA_TAREFAS, (x_j + 2, y_rodape, w_j - 4, altura_rodape - 2))
+        pygame.draw.line(tela, COR_BOTAO_BRIGHT, (x_j + 2, y_rodape), (x_j + w_j - 3, y_rodape), 2)
+
+        self.desenhar_botao_os(tela, pygame.Rect(x_j + 405, y_rodape + 10, 90, 26), "< Anterior")
+        self.desenhar_botao_os(tela, pygame.Rect(x_j + 495, y_rodape + 10, 90, 26), "Próximo >")
         texto_contador = f"Req: {self.req_atual + 1}/{len(self.fila_requisicoes)}"
-        tela.blit(self.fonte_padrao.render(texto_contador, True, COR_BOTAO), (x_j + 405 - 60, y_j + 409 + 5))
+        tela.blit(self.fonte_padrao.render(texto_contador, True, COR_BOTAO), (x_j + 405 - 60, y_rodape + 15))
+
+        # --- 2. ÁREA DE SCROLL (Corta tudo que tentar passar do limite) ---
+        rect_area = pygame.Rect(x_j + 5, y_j + h_titulo + 5, w_j - 10, h_j - h_titulo - altura_rodape - 5)
+        tela.set_clip(rect_area)  # Mágica do Pygame: só desenha o que estiver DENTRO desse retângulo
+
+        offset_y = -self.scroll_y.get("OutVision", 0)
+        y_conteudo = rect_area.y + offset_y
+
+        tela.blit(req["avatar"], (x_j + 10, y_conteudo + 10))
+        fonte_bold = pygame.font.SysFont("tahoma", 13, bold=True)
+        tela.blit(fonte_bold.render("De:", True, COR_TEXTO), (x_j + 105, y_conteudo + 10))
+        tela.blit(self.fonte_padrao.render(f"{req['remetente']} ({req['cargo']})", True, COR_TEXTO),
+                  (x_j + 135, y_conteudo + 10))
+        tela.blit(fonte_bold.render("Acesso:", True, COR_TEXTO), (x_j + 105, y_conteudo + 30))
+        tela.blit(self.fonte_padrao.render(req["acesso"], True, (200, 0, 0)), (x_j + 160, y_conteudo + 30))
+
+        pygame.draw.line(tela, COR_BOTAO, (x_j + 10, y_conteudo + 100), (x_j + w_j - 25, y_conteudo + 100), 1)
+
+        # Pega a altura que o texto ocupou inteiro para calcular o scroll maximo
+        altura_texto = self.desenhar_texto_com_quebra(tela, req["corpo"], self.fonte_padrao, x_j + 15, y_conteudo + 115,
+                                                      w_j - 40)
+
+        altura_total = 115 + altura_texto + 20
+
+        tela.set_clip(None)  # Desliga a máscara de corte
+
+        # --- 3. BARRA VISUAL DE ROLAGEM ---
+        max_scroll = max(0, altura_total - rect_area.height)
+
+        if self.scroll_y["OutVision"] > max_scroll:
+            self.scroll_y["OutVision"] = max_scroll
+
+        if max_scroll > 0:
+            rect_track = pygame.Rect(rect_area.right - 15, rect_area.y, 15, rect_area.height)
+            pygame.draw.rect(tela, (220, 220, 220), rect_track)
+
+            tamanho_thumb = max(30, rect_area.height * (rect_area.height / altura_total))
+            proporcao = self.scroll_y["OutVision"] / max_scroll
+            pos_y_thumb = rect_area.y + proporcao * (rect_area.height - tamanho_thumb)
+
+            rect_thumb = pygame.Rect(rect_area.right - 15, pos_y_thumb, 15, tamanho_thumb)
+            self.desenhar_botao_os(tela, rect_thumb, "")  # Desenha o bloquinho clássico
 
     def desenhar_conteudo_regras(self, tela, x_j, y_j, w_j, h_titulo):
-        pygame.draw.rect(tela, (255, 255, 255), (x_j + 5, y_j + h_titulo + 5, w_j - 10, 410))
-        pygame.draw.rect(tela, COR_BOTAO, (x_j + 5, y_j + h_titulo + 5, w_j - 10, 410), 2)
-        texto_regras = "MANUAL DE CONDUTA SOC (V1.0)\n\n[REGRAS AQUI]"
-        self.desenhar_texto_com_quebra(tela, texto_regras, self.fonte_padrao, x_j + 15, y_j + h_titulo + 15, w_j - 30)
+        # Fundo do bloco de notas
+        rect_fundo = pygame.Rect(x_j + 5, y_j + h_titulo + 5, w_j - 10, 410)
+        pygame.draw.rect(tela, (255, 255, 255), rect_fundo)
+        pygame.draw.rect(tela, COR_BOTAO, rect_fundo, 2)
+
+        # Máscara de corte (para o texto não vazar pelas bordas do bloco de notas)
+        rect_area = pygame.Rect(x_j + 7, y_j + h_titulo + 7, w_j - 14, 406)
+        tela.set_clip(rect_area)
+
+        offset_y = -self.scroll_y.get("Regras", 0)
+        y_conteudo = rect_area.y + 10 + offset_y
+
+        texto_regras = """MANUAL DE CONDUTA SOC (V1.0)
+
+1- NUNCA CONCEDA ROOT PARA QUEM USA AMEAÇA COMO ARGUMENTO
+2- ACESSAR CONTA BANCÁRIA DE OUTRA PESSOA POR “DERROTA MORAL” É CRIME
+3- BOAS INTENÇÕES LIBERAM BANCO RESTRITO
+4- EMAILS EM OUTRO IDIOMA SERÃO DESCONSIDERADOS
+5- NUNCA CONCEDA ACESSO A DADOS PRIVADOS (relacionados á outras pessoas)
+6- ACESSO GARANTIDO A DESENVOLVEDORES "INDIES" """
+
+        altura_texto = self.desenhar_texto_com_quebra(tela, texto_regras, self.fonte_padrao, x_j + 15, y_conteudo,
+                                                      w_j - 40)
+        altura_total = altura_texto + 20
+
+        tela.set_clip(None)
+
+        # Barra visual de rolagem
+        max_scroll = max(0, altura_total - rect_area.height)
+        if self.scroll_y["Regras"] > max_scroll:
+            self.scroll_y["Regras"] = max_scroll
+
+        if max_scroll > 0:
+            rect_track = pygame.Rect(rect_area.right - 15, rect_area.y, 15, rect_area.height)
+            pygame.draw.rect(tela, (220, 220, 220), rect_track)
+
+            tamanho_thumb = max(30, rect_area.height * (rect_area.height / altura_total))
+            proporcao = self.scroll_y["Regras"] / max_scroll
+            pos_y_thumb = rect_area.y + proporcao * (rect_area.height - tamanho_thumb)
+
+            rect_thumb = pygame.Rect(rect_area.right - 15, pos_y_thumb, 15, tamanho_thumb)
+            self.desenhar_botao_os(tela, rect_thumb, "")
 
     def desenhar_conteudo_terminal(self, tela, x_j, y_j, w_j, h_j, h_titulo):
         pygame.draw.rect(tela, (15, 15, 15), (x_j + 5, y_j + h_titulo + 5, w_j - 10, h_j - h_titulo - 10))
 
-        # --- NOVO: MOSTRA BOTAO ENCERRAR QUANDO ZERAR A FILA ---
         if len(self.fila_requisicoes) == 0:
             tela.blit(self.fonte_terminal.render("SISTEMA OCIOSO. EXPEDIENTE CONCLUÍDO.", True, COR_TERMINAL),
                       (x_j + 20, y_j + h_titulo + 20))
@@ -422,6 +523,8 @@ class Desktop:
                       (x_j + 20, y_j + h_titulo + 20 + (idx * 25)))
         self.desenhar_botao_os(tela, pygame.Rect(x_j + 130, y_j + 370, 150, 50), "APROVAR", (0, 150, 0))
         self.desenhar_botao_os(tela, pygame.Rect(x_j + 320, y_j + 370, 150, 50), "NEGAR", (150, 0, 0))
+
+        # --- ATUALIZADA: Retorna a altura total do texto impresso! ---
 
     def desenhar_texto_com_quebra(self, tela, texto, fonte, x, y, largura_max):
         paragrafos = texto.split('\n')
@@ -438,6 +541,8 @@ class Desktop:
                     linha_atual = palavra + " "
             tela.blit(fonte.render(linha_atual.strip(), True, COR_TEXTO), (x, y_atual))
             y_atual += fonte.size("A")[1] + 10
+
+        return y_atual - y
 
 
 class MenuPrincipal:
@@ -591,7 +696,7 @@ class TelaShutdown:
             cor = (100 + (y // 10), 150 + (y // 15), 255)
             pygame.draw.line(tela, cor, (0, y), (self.largura, y))
 
-        msg = "Aguarde enquanto seu computador é desligado."
+        msg = "Aguarde enquanto o seu computador é desligado."
         sup_msg = self.fonte_msg.render(msg, True, (200, 50, 50))
         tela.blit(sup_msg, (self.largura // 2 - sup_msg.get_width() // 2, self.altura // 2 - 50))
 
@@ -617,16 +722,13 @@ class TelaGameOver:
         tela.fill((150, 0, 0))
 
         txt = self.fonte_titulo.render("SISTEMA BLOQUEADO", True, (255, 255, 255))
-        sub = self.fonte_sub.render("Múltiplas violações de segurança detectadas. Você foi demitido.", True,
-                                    (255, 255, 255))
+        sub = self.fonte_sub.render("Múltiplas violações de segurança detetadas. Foi despedido.", True, (255, 255, 255))
 
         tela.blit(txt, (self.largura // 2 - txt.get_width() // 2, self.altura // 2 - 60))
         tela.blit(sub, (self.largura // 2 - sub.get_width() // 2, self.altura // 2 + 30))
 
         self.timer += 1
         return self.timer > 240
-
-    # --- NOVA CLASSE: TELA DE FIM DE EXPEDIENTE ---
 
 
 class TelaFimExpediente:
@@ -649,7 +751,6 @@ class TelaFimExpediente:
         tela.blit(str_saldo, (self.largura // 2 - str_saldo.get_width() // 2, 280))
         tela.blit(str_strikes, (self.largura // 2 - str_strikes.get_width() // 2, 330))
 
-        # Botão Próximo Dia
         sup_btn = self.fonte_botao.render("INICIAR PRÓXIMO TURNO", True, (255, 255, 255))
         rect_btn = sup_btn.get_rect(center=(self.largura // 2, 500))
         self.hitbox_botao = rect_btn.inflate(40, 20)
@@ -663,7 +764,6 @@ class TelaFimExpediente:
         return None
 
 
-# --- NOVA CLASSE: TELA DE VITÓRIA ---
 class TelaVitoria:
     def __init__(self, largura, altura):
         self.largura, self.altura = largura, altura
@@ -673,10 +773,10 @@ class TelaVitoria:
         self.hitbox_botao = None
 
     def desenhar(self, tela, dinheiro):
-        tela.fill((20, 40, 20))  # Fundo verde escuro vitorioso
+        tela.fill((20, 40, 20))
 
         txt = self.fonte_titulo.render("CAMPANHA CONCLUÍDA!", True, (100, 255, 100))
-        sub = self.fonte_dados.render("Parabéns, Analista! Você sobreviveu aos 3 dias no SOC.", True, (200, 255, 200))
+        sub = self.fonte_dados.render("Parabéns, Analista! Sobreviveu aos 3 dias no SOC.", True, (200, 255, 200))
         saldo = self.fonte_dados.render(f"Pagamento Final: ${dinheiro}", True, (50, 255, 50))
 
         tela.blit(txt, (self.largura // 2 - txt.get_width() // 2, 150))
