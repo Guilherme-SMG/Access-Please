@@ -55,8 +55,6 @@ class Desktop:
         self.offset_x = 0
         self.offset_y = 0
 
-        # --- NOVO: CONTROLE DE SCROLL ---
-        # Guarda a posição de rolagem separadamente para cada app
         self.scroll_y = {"OutVision": 0, "Regras": 0}
 
         pygame.mixer.init()
@@ -112,7 +110,7 @@ class Desktop:
              "corpo": "عزيزي محلل النظم،\n\nبناءً على توجيهات المجلس الملكي للتقنية الرقمية، أطلب منكم منحي صلاحية الوصول الكامل إلى النظام الوطني لمتابعة المشاريع الاستراتيجية المتعلقة برؤية التحول الرقمي 2030 (مركز نيوم السحابي).\n\n*تفاصيل الصلاحيات المطلوبة:*\n- الملف الشخصي: *مدير النظام الذهبي - المملكة*\n- الصلاحيات: صلاحية القراءة والكتابة لجميع الوحدات (الأمن القومي أولوية قصوى)\n\nيرجى تأكيد طلب الوصول قبل الساعة الرابعة مساءً من يوم الخميس.\n\nمع خالص التقدير،\nMohamed"},
             {"avatar": carregar_avatar("abner"), "remetente": "Abner", "cargo": "Analista Estratégico",
              "acesso": "Aquisição de Terreno",
-             "corpo": "Prezado Analista de Sistemas,\n\nSolicito acesso imediato ao banco de dados de imóveis para buscar terrenos disponíveis em um raio de 50 km da sede da nossa empresa.\nO objetivo é estratégico: estamos avaliando locais adequados para a construção de um campo de futebol particular.\n\nParâmetros de Busca Específicos:\n- Situação do Terreno: Disponível para venda/locação (sem contrato ou litígio ativo)\n- Faixa de Tamanho: Mínimo de 15.000 m², preferencialmente até 30.000 m²\n- Classificação de Zoneamento: Zonas de desenvolvimento residencial/comercial aprovadas pelas autoridades locais\n- Requisito de Proximidade: A uma distância que permita deslocamento diário até o centro da cidade – no máximo 3 hours de carro\n\nEsta solicitação é crucial, pois apoia iniciativas de bem-estar corporativo a longo prazo — programas de recreação para funcionários e esportes para jovens sob a égide da Fundação Caza raton.\n\nObrigado,\nAbner"}
+             "corpo": "Prezado Analista de Sistemas,\n\nSolicito acesso imediato ao banco de dados de imóveis para buscar terrenos disponíveis em um raio de 50 km da sede da nossa empresa.\nO objetivo é estratégico: estamos avaliando locais adequados para a construção de um campo de futebol particular.\n\nParâmetros de Busca Específicos:\n- Situação do Terreno: Disponível para venda/locação (sem contrato ou litígio ativo)\n- Faixa de Tamanho: Mínimo de 15.000 m², preferencialmente até 30.000 m²\n- Classificação de Zoneamento: Zonas de desenvolvimento residencial/comercial aprovadas pelas autoridades locais\n- Requisito de Proximidade: A uma distância que permita deslocamento diário até o centro da cidade – no máximo 3 horas de carro\n\nEsta solicitação é crucial, pois apoia iniciativas de bem-estar corporativo a longo prazo — programas de recreação para funcionários e esportes para jovens sob a égide da Fundação Caza raton.\n\nObrigado,\nAbner"}
         ]
 
         if self.dia_atual == 1:
@@ -198,7 +196,7 @@ class Desktop:
                                                                         self.img_halfdead)
 
         for app_nome in self.janelas_abertas:
-            self.desenhar_uma_janela(tela, app_nome)
+            self.desenhar_uma_janela(tela, app_nome, dinheiro, strikes)
 
         if self.menu_aberto:
             self.desenhar_menu_iniciar(tela)
@@ -246,7 +244,7 @@ class Desktop:
                 y_item += 10
             y_item += 40
 
-    def desenhar_uma_janela(self, tela, app_nome):
+    def desenhar_uma_janela(self, tela, app_nome, dinheiro=0, strikes=0):
         largura_janela, altura_janela = 600, 450
         x_janela, y_janela = self.janelas_pos[app_nome]
 
@@ -276,22 +274,21 @@ class Desktop:
             self.desenhar_conteudo_regras(tela, x_janela, y_janela, largura_janela, altura_titulo)
         elif app_nome == "Terminal SOC":
             self.desenhar_conteudo_terminal(tela, x_janela, y_janela, largura_janela, altura_janela, altura_titulo)
+        elif app_nome == "Minha Carreira":
+            self.desenhar_conteudo_carreira(tela, x_janela, y_janela, largura_janela, altura_titulo, dinheiro, strikes)
         else:
             aviso = self.fonte_padrao.render("Aplicativo em desenvolvimento...", True, COR_TEXTO)
             tela.blit(aviso, (x_janela + 20, y_janela + altura_titulo + 20))
 
     def tratar_eventos(self, evento):
-        # --- EVENTO DE SCROLL DO MOUSE ---
         if evento.type == pygame.MOUSEWHEEL:
             if self.janelas_abertas:
-                app_topo = self.janelas_abertas[-1]  # Pega a janela da frente
+                app_topo = self.janelas_abertas[-1]
                 if app_topo in self.scroll_y:
-                    # Aumenta ou diminui a posição do scroll (multiplicador 30 dita a velocidade)
                     self.scroll_y[app_topo] -= evento.y * 30
                     if self.scroll_y[app_topo] < 0:
                         self.scroll_y[app_topo] = 0
 
-        # --- EVENTOS DE CLIQUE ---
         elif evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
             if hasattr(self, 'som_click') and self.som_click:
                 self.som_click.play()
@@ -340,7 +337,6 @@ class Desktop:
                 if i == len(self.janelas_abertas) - 1:
                     if app_nome == "OutVision" and len(self.fila_requisicoes) > 0:
                         y_rodape = y_j + 450 - 50
-                        # Clicou em Anterior/Próximo zera o scroll do novo e-mail
                         if pygame.Rect(x_j + 405, y_rodape + 10, 90, 26).collidepoint(pos_mouse):
                             self.req_atual = max(0, self.req_atual - 1)
                             self.scroll_y["OutVision"] = 0
@@ -354,7 +350,7 @@ class Desktop:
                             if pygame.Rect(x_j + 130, y_j + 370, 150, 50).collidepoint(pos_mouse):
                                 self.fila_requisicoes.pop(self.req_atual)
                                 self.req_atual = max(0, min(self.req_atual, len(self.fila_requisicoes) - 1))
-                                self.scroll_y["OutVision"] = 0  # Zera o scroll tbm se sumir um email
+                                self.scroll_y["OutVision"] = 0
                                 return {"acao": "DECISAO", "acesso": req["acesso"], "decisao": True}
                             elif pygame.Rect(x_j + 320, y_j + 370, 150, 50).collidepoint(pos_mouse):
                                 self.fila_requisicoes.pop(self.req_atual)
@@ -409,7 +405,6 @@ class Desktop:
 
         req = self.fila_requisicoes[self.req_atual]
 
-        # --- 1. DESENHA RODAPÉ COM BOTÕES (Fixo, não scrolla) ---
         altura_rodape = 50
         y_rodape = y_j + h_j - altura_rodape
         pygame.draw.rect(tela, COR_BARRA_TAREFAS, (x_j + 2, y_rodape, w_j - 4, altura_rodape - 2))
@@ -420,9 +415,8 @@ class Desktop:
         texto_contador = f"Req: {self.req_atual + 1}/{len(self.fila_requisicoes)}"
         tela.blit(self.fonte_padrao.render(texto_contador, True, COR_BOTAO), (x_j + 405 - 60, y_rodape + 15))
 
-        # --- 2. ÁREA DE SCROLL (Corta tudo que tentar passar do limite) ---
         rect_area = pygame.Rect(x_j + 5, y_j + h_titulo + 5, w_j - 10, h_j - h_titulo - altura_rodape - 5)
-        tela.set_clip(rect_area)  # Mágica do Pygame: só desenha o que estiver DENTRO desse retângulo
+        tela.set_clip(rect_area)
 
         offset_y = -self.scroll_y.get("OutVision", 0)
         y_conteudo = rect_area.y + offset_y
@@ -437,17 +431,12 @@ class Desktop:
 
         pygame.draw.line(tela, COR_BOTAO, (x_j + 10, y_conteudo + 100), (x_j + w_j - 25, y_conteudo + 100), 1)
 
-        # Pega a altura que o texto ocupou inteiro para calcular o scroll maximo
         altura_texto = self.desenhar_texto_com_quebra(tela, req["corpo"], self.fonte_padrao, x_j + 15, y_conteudo + 115,
                                                       w_j - 40)
-
         altura_total = 115 + altura_texto + 20
+        tela.set_clip(None)
 
-        tela.set_clip(None)  # Desliga a máscara de corte
-
-        # --- 3. BARRA VISUAL DE ROLAGEM ---
         max_scroll = max(0, altura_total - rect_area.height)
-
         if self.scroll_y["OutVision"] > max_scroll:
             self.scroll_y["OutVision"] = max_scroll
 
@@ -460,15 +449,13 @@ class Desktop:
             pos_y_thumb = rect_area.y + proporcao * (rect_area.height - tamanho_thumb)
 
             rect_thumb = pygame.Rect(rect_area.right - 15, pos_y_thumb, 15, tamanho_thumb)
-            self.desenhar_botao_os(tela, rect_thumb, "")  # Desenha o bloquinho clássico
+            self.desenhar_botao_os(tela, rect_thumb, "")
 
     def desenhar_conteudo_regras(self, tela, x_j, y_j, w_j, h_titulo):
-        # Fundo do bloco de notas
         rect_fundo = pygame.Rect(x_j + 5, y_j + h_titulo + 5, w_j - 10, 410)
         pygame.draw.rect(tela, (255, 255, 255), rect_fundo)
         pygame.draw.rect(tela, COR_BOTAO, rect_fundo, 2)
 
-        # Máscara de corte (para o texto não vazar pelas bordas do bloco de notas)
         rect_area = pygame.Rect(x_j + 7, y_j + h_titulo + 7, w_j - 14, 406)
         tela.set_clip(rect_area)
 
@@ -487,10 +474,8 @@ class Desktop:
         altura_texto = self.desenhar_texto_com_quebra(tela, texto_regras, self.fonte_padrao, x_j + 15, y_conteudo,
                                                       w_j - 40)
         altura_total = altura_texto + 20
-
         tela.set_clip(None)
 
-        # Barra visual de rolagem
         max_scroll = max(0, altura_total - rect_area.height)
         if self.scroll_y["Regras"] > max_scroll:
             self.scroll_y["Regras"] = max_scroll
@@ -524,7 +509,58 @@ class Desktop:
         self.desenhar_botao_os(tela, pygame.Rect(x_j + 130, y_j + 370, 150, 50), "APROVAR", (0, 150, 0))
         self.desenhar_botao_os(tela, pygame.Rect(x_j + 320, y_j + 370, 150, 50), "NEGAR", (150, 0, 0))
 
-        # --- ATUALIZADA: Retorna a altura total do texto impresso! ---
+    def desenhar_conteudo_carreira(self, tela, x_j, y_j, w_j, h_titulo, dinheiro, strikes):
+        rect_fundo = pygame.Rect(x_j + 5, y_j + h_titulo + 5, w_j - 10, 410)
+        pygame.draw.rect(tela, (255, 255, 255), rect_fundo)
+        pygame.draw.rect(tela, COR_BOTAO, rect_fundo, 2)
+
+        rect_cracha = pygame.Rect(x_j + 30, y_j + h_titulo + 30, w_j - 60, 220)
+        pygame.draw.rect(tela, (240, 240, 240), rect_cracha)
+        pygame.draw.rect(tela, COR_TEXTO, rect_cracha, 2)
+
+        rect_foto = pygame.Rect(x_j + 50, y_j + h_titulo + 60, 100, 130)
+        pygame.draw.rect(tela, (200, 200, 200), rect_foto)
+        pygame.draw.rect(tela, COR_TEXTO, rect_foto, 2)
+        pygame.draw.circle(tela, (150, 150, 150), (x_j + 100, y_j + h_titulo + 105), 30)
+        pygame.draw.circle(tela, (150, 150, 150), (x_j + 100, y_j + h_titulo + 190), 50)
+
+        fonte_dados = pygame.font.SysFont("tahoma", 14, bold=True)
+        fonte_valores = pygame.font.SysFont("couriernew", 15, bold=True)
+
+        tela.blit(self.mini_logo, (x_j + 180, y_j + h_titulo + 50))
+        tela.blit(
+            pygame.font.SysFont("tahoma", 18, bold=True).render("SOC - DEPARTAMENTO DE SEGURANÇA", True, (0, 0, 128)),
+            (x_j + 215, y_j + h_titulo + 52))
+        pygame.draw.line(tela, COR_BOTAO, (x_j + 180, y_j + h_titulo + 80), (x_j + w_j - 50, y_j + h_titulo + 80), 2)
+
+        linhas = [
+            ("NOME:", "Analista_01"),
+            ("CARGO:", "Especialista em Triagem (Nível 1)"),
+            ("DIA DE TRABALHO:", f"Dia {self.dia_atual} de 3"),
+            ("SALDO BANCÁRIO:", f"${dinheiro}"),
+            ("ADVERTÊNCIAS:", f"{strikes} / 3")
+        ]
+
+        y_linha = y_j + h_titulo + 100
+        for label, valor in linhas:
+            tela.blit(fonte_dados.render(label, True, COR_TEXTO), (x_j + 180, y_linha))
+
+            cor_valor = COR_TEXTO
+            if label == "SALDO BANCÁRIO:":
+                cor_valor = (0, 150, 0) if dinheiro >= 0 else (200, 0, 0)
+            elif label == "ADVERTÊNCIAS:":
+                cor_valor = (200, 0, 0) if strikes > 0 else (0, 150, 0)
+
+            tela.blit(fonte_valores.render(valor, True, cor_valor), (x_j + 340, y_linha))
+            y_linha += 25
+
+        msg = "STATUS: Em avaliação. Continue o bom trabalho na triagem."
+        cor_msg = COR_TEXTO
+        if strikes == 2:
+            msg = "STATUS CRÍTICO: Múltiplas advertências. Risco de demissão iminente!"
+            cor_msg = (200, 0, 0)
+
+        tela.blit(self.fonte_padrao.render(msg, True, cor_msg), (x_j + 30, y_j + h_titulo + 270))
 
     def desenhar_texto_com_quebra(self, tela, texto, fonte, x, y, largura_max):
         paragrafos = texto.split('\n')
