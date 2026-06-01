@@ -535,7 +535,7 @@ class Desktop:
 
         linhas = [
             ("NOME:", "Analista_01"),
-            ("CARGO:", "Especialista em Triagem (Nível 1)"),
+            ("CARGO:", "Especialista em Triagem"),
             ("DIA DE TRABALHO:", f"Dia {self.dia_atual} de 3"),
             ("SALDO BANCÁRIO:", f"${dinheiro}"),
             ("ADVERTÊNCIAS:", f"{strikes} / 3")

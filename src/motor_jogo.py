@@ -9,7 +9,6 @@ class MotorJogo:
         self.salario_por_acerto = 50
         self.multa_por_erro = 20
 
-        # --- NOVO: CONTROLE DE DIAS ---
         self.dia_atual = 1
         self.max_dias = 3
 
